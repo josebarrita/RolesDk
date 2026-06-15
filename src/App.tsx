@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Database, Brain, BarChart3, Sparkles, Cloud, Target, Wrench, ListChecks, Compass, Gauge, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight, X } from "lucide-react";
+import { Database, Brain, BarChart3, Sparkles, Cloud, Target, Wrench, ListChecks, Compass, Gauge, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight } from "lucide-react";
 
 /* ----------------------------- DATA ----------------------------- */
 const ROLE_ORDER = ["de", "ds", "bi", "ia"];
@@ -206,7 +206,7 @@ const LATERAL = [
   { a: "de", b: "ds", note: "Movimiento al mismo nivel o uno abajo, con plan de nivelación de 3-6 meses." },
 ];
 
-const AGILE = {
+const AGILE: Record<string, { facilitates: string; expects: string; cadence: string; friction: string }> = {
   de: {
     facilitates: "Protege el tiempo de trabajo profundo. Gestiona dependencias con Infra y Seguridad. Equilibra features nuevas vs. deuda técnica. Visibiliza el trabajo 'invisible' de plataforma ante stakeholders.",
     expects: "Estimaciones honestas (incluyendo incertidumbre). Escalación temprana de blockers. Visibilidad del estado de pipelines críticos. Participación activa en refinement.",
@@ -246,19 +246,19 @@ const RACI = [
   { act: "Promociones y evaluación técnica", v: ["C", "C", "C", "C", "C", "A/R"] },
 ];
 const RACI_COLS = ["Ing. Datos", "Científico", "Analista BI", "Ing. IA", "Agile Mgr", "Líder T./E."];
-const RACI_COLORS = { "A/R": "#34d399", "A": "#22d3ee", "R": "#a78bfa", "C": "#fbbf24", "I": "#64748b" };
+const RACI_COLORS: Record<string, string> = { "A/R": "#34d399", "A": "#22d3ee", "R": "#a78bfa", "C": "#fbbf24", "I": "#64748b" };
 
 /* ----------------------------- HELPERS ----------------------------- */
-function edge(a, b, r = 80) {
+function edge(a: {x: number, y: number}, b: {x: number, y: number}, r = 80) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
   return { x1: a.x + (dx / len) * r, y1: a.y + (dy / len) * r, x2: b.x - (dx / len) * r, y2: b.y - (dy / len) * r };
 }
 
 /* ----------------------------- COMPONENTS ----------------------------- */
-function GraphView({ onSelect }) {
-  const [mode, setMode] = useState("value"); // value | lateral
-  const [hover, setHover] = useState(null);
+function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
+  const [mode, setMode] = useState("value");
+  const [hover, setHover] = useState<string | null>(null);
 
   return (
     <div className="w-full">
@@ -295,7 +295,6 @@ function GraphView({ onSelect }) {
           </defs>
           <rect x="0" y="0" width="1000" height="620" fill="url(#bgGlow)" />
 
-          {/* value flow */}
           {mode === "value" && VALUE_FLOW.map(([a, b], i) => {
             const e = edge(ROLES[a].pos, ROLES[b].pos);
             const active = hover === a || hover === b;
@@ -304,7 +303,6 @@ function GraphView({ onSelect }) {
               markerEnd="url(#arrowV)" opacity={hover && !active ? 0.25 : 0.9} />;
           })}
 
-          {/* lateral */}
           {mode === "lateral" && LATERAL.map((l, i) => {
             const e = edge(ROLES[l.a].pos, ROLES[l.b].pos);
             const active = hover === l.a || hover === l.b;
@@ -314,7 +312,6 @@ function GraphView({ onSelect }) {
               opacity={hover && !active ? 0.2 : 0.85} />;
           })}
 
-          {/* nodes */}
           {ROLE_ORDER.map((k) => {
             const r = ROLES[k];
             const Icon = r.icon;
@@ -353,7 +350,6 @@ function GraphView({ onSelect }) {
           })}
         </svg>
 
-        {/* legend */}
         <div className="absolute bottom-2 left-3 right-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-slate-400">
           {mode === "value" ? (
             <>
@@ -368,7 +364,6 @@ function GraphView({ onSelect }) {
         </div>
       </div>
 
-      {/* lateral notes */}
       {mode === "lateral" && (
         <div className="mt-3 grid sm:grid-cols-2 gap-2">
           {LATERAL.map((l, i) => (
@@ -388,12 +383,12 @@ function GraphView({ onSelect }) {
   );
 }
 
-function RoleDetail({ roleKey, onBack }) {
+function RoleDetail({ roleKey, onBack }: { roleKey: string; onBack: () => void }) {
   const r = ROLES[roleKey];
   const Icon = r.icon;
   const [level, setLevel] = useState("Junior");
   const lvlIndex = LEVELS.indexOf(level);
-  const data = r.levels[level];
+  const data = r.levels[level as keyof typeof r.levels];
   const prog = lvlIndex < 4 ? r.progression[lvlIndex] : null;
 
   return (
@@ -417,7 +412,6 @@ function RoleDetail({ roleKey, onBack }) {
         </div>
       </div>
 
-      {/* level ladder */}
       <div className="flex items-stretch gap-1.5 mb-4 overflow-x-auto pb-1">
         {LEVELS.map((lv, i) => {
           const sel = lv === level;
@@ -435,7 +429,6 @@ function RoleDetail({ roleKey, onBack }) {
         })}
       </div>
 
-      {/* dimensions */}
       <div className="grid sm:grid-cols-2 gap-3">
         {DIMS.map((d) => {
           const DIcon = d.icon;
@@ -445,13 +438,12 @@ function RoleDetail({ roleKey, onBack }) {
                 <DIcon size={15} style={{ color: r.color }} />
                 <span className="text-sm font-semibold text-slate-200">{d.label}</span>
               </div>
-              <p className="text-[13px] text-slate-400 leading-relaxed">{data[d.key]}</p>
+              <p className="text-[13px] text-slate-400 leading-relaxed">{data[d.key as keyof typeof data]}</p>
             </div>
           );
         })}
       </div>
 
-      {/* progression */}
       {prog && (
         <div className="mt-4 rounded-xl p-4" style={{ background: "rgba(30,41,59,0.5)", border: `1px dashed ${r.color}66` }}>
           <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-200">
@@ -495,7 +487,6 @@ function AgileView() {
       <h2 className="text-lg sm:text-xl font-bold text-slate-100">El Agile Manager como orquestador</h2>
       <p className="text-xs sm:text-sm text-slate-400 mb-4">No es un rol técnico: es el "control plane" del equipo. Selecciona un rol para ver su interacción.</p>
 
-      {/* mini orchestration map */}
       <div className="rounded-2xl bg-slate-900/60 ring-1 ring-slate-800 p-4 mb-4">
         <div className="text-center text-[11px] text-slate-500 mb-2">↑ Liderazgo ejecutivo · Product Owner / Negocio ↑</div>
         <div className="mx-auto max-w-md rounded-xl py-2.5 text-center font-bold text-slate-100 mb-3"
@@ -532,7 +523,7 @@ function AgileView() {
 }
 
 function RaciView() {
-  const [hl, setHl] = useState(null); // column index
+  const [hl, setHl] = useState<number | null>(null);
   return (
     <div className="w-full">
       <h2 className="text-lg sm:text-xl font-bold text-slate-100">Matriz RACI de actividades clave</h2>
@@ -571,9 +562,9 @@ function RaciView() {
                     style={{ background: hl === ci ? "rgba(51,65,85,0.45)" : undefined }}>
                     <span className="inline-flex items-center justify-center rounded-md text-[11px] font-bold px-1.5 py-0.5"
                       style={{
-                        color: RACI_COLORS[val],
-                        background: `${RACI_COLORS[val]}1f`,
-                        border: `1px solid ${RACI_COLORS[val]}55`,
+                        color: RACI_COLORS[val] ?? "#64748b",
+                        background: `${RACI_COLORS[val] ?? "#64748b"}1f`,
+                        border: `1px solid ${RACI_COLORS[val] ?? "#64748b"}55`,
                         opacity: hl !== null && hl !== ci ? 0.35 : 1,
                       }}>{val}</span>
                   </td>
@@ -590,8 +581,8 @@ function RaciView() {
 
 /* ----------------------------- ROOT ----------------------------- */
 export default function App() {
-  const [tab, setTab] = useState("graph"); // graph | agile | raci
-  const [role, setRole] = useState(null);
+  const [tab, setTab] = useState("graph");
+  const [role, setRole] = useState<string | null>(null);
 
   const tabs = [
     { k: "graph", label: "Roles y flujo", icon: Network },
@@ -602,7 +593,6 @@ export default function App() {
   return (
     <div className="min-h-screen w-full text-slate-200" style={{ background: "radial-gradient(120% 100% at 50% 0%, #0f172a 0%, #020617 70%)" }}>
       <div className="mx-auto max-w-5xl px-3 sm:px-5 py-5">
-        {/* header */}
         <div className="flex items-center gap-2.5 mb-1">
           <span className="flex items-center justify-center rounded-xl" style={{ width: 38, height: 38, background: "rgba(56,189,248,0.15)" }}>
             <Cloud size={20} className="text-sky-400" />
@@ -613,10 +603,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* tabs */}
         <div className="flex gap-1.5 my-4 overflow-x-auto pb-1">
           {tabs.map((t) => {
-            const TIcon = t.icon; const on = tab === t.k && !(t.k === "graph" && role);
+            const TIcon = t.icon;
             const active = tab === t.k;
             return (
               <button key={t.k} onClick={() => { setTab(t.k); setRole(null); }}
@@ -632,7 +621,6 @@ export default function App() {
           })}
         </div>
 
-        {/* content */}
         <div className="rounded-2xl bg-slate-900/30 ring-1 ring-slate-800/60 p-4 sm:p-5">
           {tab === "graph" && (role ? <RoleDetail roleKey={role} onBack={() => setRole(null)} /> : <GraphView onSelect={setRole} />)}
           {tab === "agile" && <AgileView />}
