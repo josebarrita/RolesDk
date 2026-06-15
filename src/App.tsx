@@ -1,0 +1,646 @@
+import { useState } from "react";
+import { Database, Brain, BarChart3, Sparkles, Cloud, Target, Wrench, ListChecks, Compass, Gauge, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight, X } from "lucide-react";
+
+/* ----------------------------- DATA ----------------------------- */
+const ROLE_ORDER = ["de", "ds", "bi", "ia"];
+
+const ROLES = {
+  de: {
+    name: "Ingeniero de Datos", short: "Ing. Datos", icon: Database,
+    color: "#38bdf8", soft: "rgba(56,189,248,0.12)",
+    cloud: "Compute + Storage + Networking", cloudShort: "Infraestructura base",
+    mission: "Garantizar que los datos correctos lleguen al lugar correcto, en el momento correcto, con la calidad correcta.",
+    pos: { x: 165, y: 315 },
+    levels: {
+      Junior: {
+        resp: "Desarrolla pipelines de datos básicos bajo supervisión directa. Ejecuta procesos ETL simples ya diseñados. Documenta procesos técnicos. Limpia y valida datasets. Resuelve bugs de baja complejidad.",
+        hab: "Python y SQL básico-intermedio. Git (branching, PRs). Conceptos de ETL. Linux básico (bash, cron). Una herramienta de orquestación básica.",
+        alc: "Pipelines pequeños y aislados. Datasets < 1GB. Solo ambientes de desarrollo. Cero decisiones de arquitectura. Siempre con revisión de un SS o Senior.",
+        aut: "Baja. Tareas asignadas y acotadas. Check-ins diarios con su mentor.",
+        kpi: "Pipelines completados por sprint. Bugs resueltos. % de PRs aprobados sin re-trabajo mayor. Documentación entregada." },
+      Semisenior: {
+        resp: "Diseña e implementa pipelines ETL/ELT completos de complejidad media. Optimiza queries y procesos existentes. Da soporte técnico a Científicos y Analistas. Hace debugging en producción. Mentorea a Juniors.",
+        hab: "Python y SQL avanzado. Docker. Apache Spark básico. Bases relacionales y NoSQL. Airflow/Prefect. CI/CD básico. Modelado de datos intermedio.",
+        alc: "Pipelines medianos end-to-end. Datasets < 100GB. Pre-producción y producción no crítica. Decisiones técnicas dentro de su pipeline.",
+        aut: "Media. Recibe el 'qué' y define el 'cómo'. Consulta decisiones que afecten a otros equipos.",
+        kpi: "Performance de pipelines (mejora ≥10%). Calidad de datos > 99%. Tiempo de resolución de incidentes. Juniors mentoreados." },
+      Senior: {
+        resp: "Diseña la arquitectura de la plataforma de datos. Optimiza sistemas a escala. Lidera técnicamente iniciativas grandes. Define estándares de ingeniería de datos. Es el escalation point técnico del equipo.",
+        hab: "Spark a escala. Arquitectura de datos (lakehouse, medallion). Cloud (AWS/GCP/Azure). Kubernetes. Streaming (Kafka). IaC (Terraform). Data governance técnico.",
+        alc: "Pipelines empresariales críticos. Datasets > 1TB. Producción crítica 24/7. Decisiones arquitectónicas que afectan a múltiples equipos.",
+        aut: "Alta. Define el 'qué' y el 'cómo' técnico. Solo escala decisiones de presupuesto o estrategia.",
+        kpi: "Uptime > 99.9%. Latencia dentro de SLA. Reducción de costos cloud ≥ 15%. Reducción de deuda técnica. Arquitecturas adoptadas." },
+      "Líder Técnico": {
+        resp: "Dirige técnicamente al equipo de Data Engineering (5-10 personas). Define la estrategia técnica a 6-12 meses. Coachea Seniors. Toma decisiones de arquitectura empresa-wide. Gestiona el roadmap técnico.",
+        hab: "Arquitectura empresarial. FinOps. MLOps/DataOps. Gestión de personas técnicas. Comunicación con ejecutivos. Negociación de prioridades.",
+        alc: "Todo el ecosistema de datos: data lake, warehouse, streaming. Presupuesto técnico del área. Roadmap del equipo.",
+        aut: "Muy alta. Responde por resultados del equipo, no por tareas individuales.",
+        kpi: "Delivery del equipo ≥ 95%. eNPS / retención del equipo. Velocidad de onboarding. Tecnologías evaluadas y adoptadas." },
+      "Líder Especialista": {
+        resp: "Define la estrategia global de datos a 2-3 años. Establece estándares y gobernanza de toda la organización. Investiga tecnologías emergentes. Conecta la estrategia de datos con la de negocio.",
+        hab: "Visión de negocio. Gobernanza de datos empresarial. Dirección estratégica. Pensamiento sistémico. Influencia a nivel C-level.",
+        alc: "Transformación digital data-centric de toda la empresa. Roadmaps multi-año. Múltiples equipos e iniciativas.",
+        aut: "Total dentro de su dominio. Reporta a nivel ejecutivo.",
+        kpi: "ROI de iniciativas de datos. Time-to-market de productos de datos. Adopción de estándares (%). Valor económico generado." },
+    },
+    progression: [
+      { to: "Semisenior", time: "1.5 - 2.5 años", criteria: "Diseña pipelines completos sin supervisión. Domina su stack. Resuelve incidentes solo. Ha mentoreado al menos informalmente.", change: "De ejecutar tareas asignadas → a diseñar soluciones completas dentro de su pipeline." },
+      { to: "Senior", time: "2 - 3 años", criteria: "Decisiones arquitectónicas correctas demostradas. Impacto cross-team. Referente técnico. Maneja producción crítica con calma.", change: "De ejecutor de soluciones → a arquitecto. Su impacto se mide en sistemas, no en tareas." },
+      { to: "Líder Técnico", time: "2 - 4 años (opcional)", criteria: "Habilidades de gestión demostradas. Quiere desarrollar personas. Visión más allá de lo técnico. Es un cambio de carrera, no un ascenso obligatorio.", change: "De manos en el teclado → a multiplicar al equipo. Su éxito es el éxito de otros." },
+      { to: "Líder Especialista", time: "3 - 5 años", criteria: "Resultados sostenidos del equipo. Influencia ejecutiva. Visión estratégica probada.", change: "De dirigir un equipo → a definir la estrategia de datos de la organización." },
+    ],
+  },
+  ds: {
+    name: "Científico de Datos", short: "Científico", icon: Brain,
+    color: "#a78bfa", soft: "rgba(167,139,250,0.12)",
+    cloud: "Servicios de ML gestionado", cloudShort: "Motor de inteligencia",
+    mission: "Resolver problemas de negocio mediante modelos estadísticos y de machine learning que generen valor medible.",
+    pos: { x: 500, y: 130 },
+    levels: {
+      Junior: {
+        resp: "Realiza análisis exploratorio (EDA) supervisado. Construye modelos simples (regresión, árboles) con guía. Prepara y limpia datos. Apoya en visualizaciones. Documenta experimentos.",
+        hab: "Python (pandas, numpy). scikit-learn básico. Estadística descriptiva e inferencial básica. Jupyter. SQL básico. Visualización (matplotlib/seaborn).",
+        alc: "Análisis descriptivos. Modelos lineales/básicos. Datasets ya curados. Proyectos de bajo riesgo. Siempre con revisión.",
+        aut: "Baja. Hipótesis y enfoques definidos por su mentor.",
+        kpi: "Análisis completados. Modelos baseline entregados. Precisión > 75% en problemas asignados. Calidad de documentación." },
+      Semisenior: {
+        resp: "Desarrolla modelos predictivos de complejidad media-alta. Hace feature engineering avanzado. Valida modelos rigurosamente. Diseña y ejecuta A/B tests. Comunica insights a negocio.",
+        hab: "Python avanzado. XGBoost/LightGBM. TensorFlow/PyTorch básico. SQL intermedio. Estadística inferencial sólida. Storytelling de datos.",
+        alc: "Modelos predictivos en producción de riesgo medio. Datasets complejos < 100GB. Experimentos multi-variable. Decide enfoque de modelado.",
+        aut: "Media. Recibe el problema de negocio y define el enfoque técnico.",
+        kpi: "F1/AUC según problema (típico > 85%). Time-to-production de modelos. Modelos adoptados por negocio. Rigor experimental." },
+      Senior: {
+        resp: "Diseña sistemas de ML end-to-end. Optimiza modelos complejos en producción. Define la estrategia de features y experimentación. Lidera iniciativas grandes. Innova en técnicas (causal inference, deep learning).",
+        hab: "ML avanzado. Feature stores. MLOps (monitoring, retraining). Deep learning. Plataformas cloud ML. Inferencia causal. Diseño experimental complejo.",
+        alc: "Sistemas ML críticos a escala. Modelos que mueven dinero/decisiones clave. Datasets > 1TB. Mentoring técnico del equipo.",
+        aut: "Alta. Define enfoques, prioriza experimentos, decide trade-offs técnicos.",
+        kpi: "ROI atribuible a modelos. Latencia de inferencia en SLA. Drift detection activo. Impacto de negocio cuantificado en $." },
+      "Líder Técnico": {
+        resp: "Dirige al equipo de Data Science (5-10 personas). Define metodologías y estándares de ML. Establece la gobernanza de modelos. Prioriza el portafolio de iniciativas con negocio.",
+        hab: "ML enterprise. MLOps avanzado. Gestión de talento científico. Comunicación ejecutiva. Priorización por valor de negocio.",
+        alc: "Portafolio completo de modelos en producción. Centro de excelencia ML. Presupuesto del área.",
+        aut: "Muy alta. Responde por el valor generado por todo el portafolio de DS.",
+        kpi: "Valor en $ generado por DS. % de modelos en producción vs. prototipos. Madurez ML del equipo. Retención de talento." },
+      "Líder Especialista": {
+        resp: "Define la visión de IA/ML de la empresa a 2-3 años. Investiga y evalúa técnicas emergentes. Diseña el roadmap de innovación. Asegura que la IA genere ventaja competitiva real.",
+        hab: "Estrategia de IA. Conocimiento profundo de fronteras (GenAI, RL, etc.). Visión de negocio. Liderazgo ejecutivo. Gestión de riesgo de IA.",
+        alc: "Transformación con IA de toda la organización. Diferencial competitivo. Múltiples equipos.",
+        aut: "Total dentro de su dominio. Influye en estrategia corporativa.",
+        kpi: "Iniciativas de IA implementadas con éxito. Ahorro/ingreso generado. Posicionamiento competitivo. Pipeline de innovación." },
+    },
+    progression: [
+      { to: "Semisenior", time: "1.5 - 2.5 años", criteria: "Modelos en producción con impacto medible. Rigor estadístico sin supervisión. Comunica insights a negocio efectivamente.", change: "De ejecutar análisis definidos → a resolver problemas de negocio con autonomía técnica." },
+      { to: "Senior", time: "2 - 3 años", criteria: "Sistemas ML end-to-end exitosos. Innovación técnica demostrada. Mentoring activo. Impacto en $ cuantificable.", change: "De construir modelos → a diseñar sistemas de ML y estrategias de experimentación." },
+      { to: "Líder Técnico", time: "2 - 4 años (opcional)", criteria: "Gestión de portafolio demostrada. Priorización por valor. Desarrollo de personas. Cambio de carrera, no obligatorio.", change: "De científico individual → a multiplicador del valor de todo el equipo de DS." },
+      { to: "Líder Especialista", time: "3 - 5 años", criteria: "Portafolio con ROI sostenido. Visión de frontera tecnológica. Influencia C-level.", change: "De dirigir DS → a definir cómo la IA transforma el negocio." },
+    ],
+  },
+  bi: {
+    name: "Analista de Datos (BI)", short: "Analista BI", icon: BarChart3,
+    color: "#fbbf24", soft: "rgba(251,191,36,0.12)",
+    cloud: "Capa de presentación / API Gateway", cloudShort: "Interfaz con el negocio",
+    mission: "Que cada decisión de negocio relevante esté soportada por datos confiables, accesibles y entendibles.",
+    pos: { x: 500, y: 500 },
+    levels: {
+      Junior: {
+        resp: "Construye reportes operacionales básicos. Crea dashboards simples a partir de specs. Responde consultas de datos de stakeholders. Mantiene reportes existentes. Documenta fuentes y métricas.",
+        hab: "SQL básico. Power BI o Tableau fundamentales. Excel avanzado. Comprensión básica del negocio. Visualización básica.",
+        alc: "Reportes departamentales. Datos históricos simples. Datasets < 1GB. Trabajo con specs claras y revisión.",
+        aut: "Baja. Requerimientos detallados y validación de su SS/Senior.",
+        kpi: "Reportes entregados por sprint. Tiempo de respuesta < 24-48h. Adopción de sus reportes. Errores detectados en QA." },
+      Semisenior: {
+        resp: "Diseña dashboards analíticos completos. Modela datos para BI (esquemas estrella, métricas). Optimiza performance. Hace análisis multi-dimensional. Traduce preguntas vagas en análisis concretos.",
+        hab: "SQL avanzado. Power BI/Tableau avanzado (DAX, LOD). Modelado dimensional. Estadística descriptiva. Storytelling. Conocimiento sólido del negocio.",
+        alc: "Dashboards empresariales de un área completa. Datos cuasi-real-time. Decide diseño y modelo de datos de sus soluciones.",
+        aut: "Media. Recibe la pregunta de negocio y define la solución analítica.",
+        kpi: "Performance de dashboards (carga < 5s). Precisión > 99%. Usuarios activos mensuales. Insights que generaron acción." },
+      Senior: {
+        resp: "Diseña la arquitectura de la plataforma BI. Define la capa semántica y el catálogo de métricas corporativas. Lidera iniciativas cross-área. Mentorea analistas. Es el puente entre negocio y los roles técnicos.",
+        hab: "BI enterprise. Data warehousing (Snowflake, BigQuery). Capa semántica. Python para análisis. Data governance funcional. Influencia con stakeholders.",
+        alc: "Plataforma BI corporativa. Múltiples líneas de negocio. Definición de métricas oficiales de la empresa.",
+        aut: "Alta. Define estándares analíticos y prioriza el backlog de su dominio.",
+        kpi: "Time-to-insight (pregunta → respuesta). % de adopción de analytics por área. Reducción de reportes ad-hoc. Single source of truth." },
+      "Líder Técnico": {
+        resp: "Lidera el equipo de BI/Analytics (4-8 personas). Establece la gobernanza de métricas y datos de consumo. Define estándares de visualización y self-service. Construye la cultura analítica.",
+        hab: "Estrategia de BI. Data governance. Gestión de equipos. Change management. Comunicación ejecutiva.",
+        alc: "Centro de excelencia en BI. Gobernanza de métricas empresa-wide. Roadmap analítico.",
+        aut: "Muy alta. Responde por la confiabilidad y adopción de todo el ecosistema analítico.",
+        kpi: "Madurez analítica organizacional. Data quality score > 95%. Capacidad del equipo. % de decisiones soportadas por datos." },
+      "Líder Especialista": {
+        resp: "Define la estrategia de decisiones basadas en datos para toda la empresa. Lidera la transformación cultural hacia data-driven. Integra analytics en los procesos ejecutivos de decisión.",
+        hab: "Estrategia de BI corporativa. Change management avanzado. Visión de negocio profunda. Liderazgo ejecutivo.",
+        alc: "Cultura data-driven de toda la organización. Procesos de decisión ejecutiva.",
+        aut: "Total dentro de su dominio. Asesor de C-level.",
+        kpi: "Mejora medible en calidad de decisiones. Impacto de negocio en $. Velocidad de decisión. Madurez data-driven (assessment anual)." },
+    },
+    progression: [
+      { to: "Semisenior", time: "1 - 2 años", criteria: "Dashboards adoptados por negocio. Modela datos correctamente. Traduce preguntas vagas en análisis. Domina su herramienta BI.", change: "De construir según specs → a diseñar soluciones analíticas desde la pregunta de negocio." },
+      { to: "Senior", time: "2 - 3 años", criteria: "Soluciones cross-área exitosas. Define métricas corporativas. Referente de negocio y técnico. Stakeholder management probado.", change: "De analista de un área → a arquitecto de la plataforma analítica y puente con negocio." },
+      { to: "Líder Técnico", time: "2 - 4 años (opcional)", criteria: "Construcción de cultura analítica. Gestión de equipo. Gobernanza implementada.", change: "De resolver con sus manos → a construir la capacidad analítica de la organización." },
+      { to: "Líder Especialista", time: "3 - 5 años", criteria: "Transformación cultural medible. Influencia en decisiones ejecutivas.", change: "De liderar BI → a transformar cómo decide toda la empresa." },
+    ],
+  },
+  ia: {
+    name: "Ingeniero de IA", short: "Ing. IA", icon: Sparkles,
+    color: "#34d399", soft: "rgba(52,211,153,0.12)",
+    cloud: "IA gestionada / Serverless", cloudShort: "Capa más cercana al producto",
+    mission: "Convertir capacidades de IA (modelos propios y de terceros) en productos de producción que generen valor, con seguridad, observabilidad y costos controlados.",
+    pos: { x: 835, y: 315 },
+    levels: {
+      Junior: {
+        resp: "Implementa integraciones básicas con APIs de LLMs bajo supervisión. Escribe y prueba prompts. Construye prototipos simples (chatbots, clasificadores con LLM). Documenta fallos. Ejecuta evaluaciones definidas por otros.",
+        hab: "Python intermedio. APIs REST. Prompt engineering básico. Git. Conceptos de LLMs (tokens, contexto, temperatura). Un framework básico (LangChain/LlamaIndex inicial).",
+        alc: "Prototipos y POCs. Features de bajo riesgo. Sin acceso a producción crítica. Prompts y flujos revisados por SS/Senior.",
+        aut: "Baja. Casos de uso y diseño definidos por su mentor.",
+        kpi: "Prototipos entregados. Calidad de prompts (pass rate en evals). Casos de fallo documentados. Velocidad de iteración." },
+      Semisenior: {
+        resp: "Desarrolla aplicaciones de IA completas: RAG, function calling, fine-tuning ligero. Diseña pipelines de evaluación. Implementa guardrails y manejo de errores. Optimiza costos de tokens y latencia. Integra IA en productos.",
+        hab: "Python avanzado. RAG (embeddings, vector DBs). Frameworks de orquestación. Evals sistemáticas. Observabilidad de LLMs (tracing). Fine-tuning básico. Seguridad básica (prompt injection).",
+        alc: "Features de IA en producción de riesgo medio. Sistemas RAG completos. Decide arquitectura de sus features.",
+        aut: "Media. Recibe el caso de uso y define la solución técnica.",
+        kpi: "Calidad de respuestas (eval scores > umbral). Costo por interacción (optimización ≥ 20%). Latencia p95 en SLA. Tasa de alucinación/error." },
+      Senior: {
+        resp: "Diseña la arquitectura de sistemas de IA a escala: agentes multi-paso, orquestación de modelos, routing inteligente. Define la estrategia de evaluación y seguridad. Decide build vs. buy. Lidera iniciativas de GenAI. Establece estándares de LLMOps.",
+        hab: "Arquitectura de sistemas de IA. Agentes y tool use. Fine-tuning y RLHF conceptual. LLMOps completo. Seguridad de IA (jailbreaks, data leakage). Optimización de inferencia. FinOps de IA.",
+        alc: "Sistemas de IA críticos en producción. Plataforma de IA interna. Decisiones de modelo/proveedor empresa-wide.",
+        aut: "Alta. Define arquitecturas, estándares y trade-offs costo/calidad/latencia.",
+        kpi: "Confiabilidad de sistemas IA (> 99.5%). Costo total de IA optimizado. Incidentes de seguridad = 0. Adopción de la plataforma interna. Time-to-production de features." },
+      "Líder Técnico": {
+        resp: "Dirige al equipo de AI Engineering. Define la estrategia técnica a 6-12 meses. Establece la gobernanza de IA (uso responsable, compliance, privacidad). Coordina con DS y DE. Gestiona la relación con proveedores de modelos.",
+        hab: "Estrategia de plataforma de IA. AI governance y regulación (EU AI Act, etc.). Gestión de equipos. Vendor management. Comunicación ejecutiva. Evaluación de riesgo de IA.",
+        alc: "Toda la plataforma y portafolio de productos con IA. Presupuesto de IA (APIs + infra). Políticas de uso de IA.",
+        aut: "Muy alta. Responde por el valor, costo y riesgo de toda la IA en producción.",
+        kpi: "Valor generado por features de IA ($). ROI del gasto en IA. Compliance de gobernanza (100%). Capacidad y retención del equipo." },
+      "Líder Especialista": {
+        resp: "Define la visión de IA aplicada de la empresa a 2-3 años. Anticipa cambios en el ecosistema. Identifica oportunidades de diferenciación. Lidera la transformación de productos y procesos con IA. Representa a la empresa en el ecosistema de IA.",
+        hab: "Visión estratégica de IA. Frontera tecnológica (agentes autónomos, multimodal). Economía de la IA. Liderazgo ejecutivo. Gestión de riesgo estratégico.",
+        alc: "Estrategia de IA de toda la organización. Transformación de productos y operaciones. Posicionamiento competitivo.",
+        aut: "Total dentro de su dominio. Asesor directo de C-level en IA.",
+        kpi: "Ventaja competitiva atribuible a IA. Nuevos productos/ingresos habilitados por IA. Velocidad de adopción vs. mercado. Riesgo de IA gestionado." },
+    },
+    progression: [
+      { to: "Semisenior", time: "1 - 2 años (acelerado por demanda del mercado)", criteria: "Features de IA en producción funcionando. Evals sistemáticas implementadas. Domina RAG y orquestación. Entiende trade-offs costo/calidad.", change: "De prototipos supervisados → a features completas de IA en producción." },
+      { to: "Senior", time: "2 - 3 años", criteria: "Arquitecturas de IA a escala exitosas. Decisiones build vs. buy correctas. Cero incidentes graves de seguridad. Referente en LLMOps.", change: "De construir features → a diseñar la plataforma y los estándares de IA." },
+      { to: "Líder Técnico", time: "2 - 3 años (opcional)", criteria: "Gobernanza de IA implementada. Gestión de presupuesto y vendors. Coordinación efectiva con DS y DE.", change: "De arquitecto de IA → a responsable del valor, costo y riesgo de toda la IA." },
+      { to: "Líder Especialista", time: "3 - 4 años", criteria: "Productos de IA con ventaja competitiva demostrada. Anticipación correcta de tendencias. Influencia ejecutiva.", change: "De liderar la plataforma → a definir cómo la IA redefine el negocio." },
+    ],
+  },
+};
+
+const LEVELS = ["Junior", "Semisenior", "Senior", "Líder Técnico", "Líder Especialista"];
+const DIMS = [
+  { key: "resp", label: "Responsabilidades", icon: ListChecks },
+  { key: "hab", label: "Habilidades", icon: Wrench },
+  { key: "alc", label: "Alcance", icon: Compass },
+  { key: "aut", label: "Autonomía", icon: Target },
+  { key: "kpi", label: "KPIs", icon: Gauge },
+];
+
+const VALUE_FLOW = [
+  ["de", "ds"], ["ds", "ia"], ["de", "bi"], ["ds", "bi"], ["ia", "bi"],
+];
+const LATERAL = [
+  { a: "de", b: "ia", note: "Aporta fortaleza en infraestructura; debe sumar conocimiento de LLMs y evals." },
+  { a: "ds", b: "ia", note: "Aporta dominio de modelos; debe sumar ingeniería de producción y costos." },
+  { a: "bi", b: "ds", note: "Aporta conocimiento de negocio; debe reforzar Python y estadística." },
+  { a: "de", b: "ds", note: "Movimiento al mismo nivel o uno abajo, con plan de nivelación de 3-6 meses." },
+];
+
+const AGILE = {
+  de: {
+    facilitates: "Protege el tiempo de trabajo profundo. Gestiona dependencias con Infra y Seguridad. Equilibra features nuevas vs. deuda técnica. Visibiliza el trabajo 'invisible' de plataforma ante stakeholders.",
+    expects: "Estimaciones honestas (incluyendo incertidumbre). Escalación temprana de blockers. Visibilidad del estado de pipelines críticos. Participación activa en refinement.",
+    cadence: "Daily (15 min). Refinement semanal. Sprint planning quincenal. Retro quincenal. 1:1 quincenal.",
+    friction: "Urgencias de datos de negocio vs. trabajo de plataforma de largo plazo. El AM debe defender la inversión en infraestructura." },
+  ds: {
+    facilitates: "Adapta el marco ágil a la naturaleza incierta de la experimentación. Gestiona expectativas sobre tiempos de ML. Facilita acceso a datos vía Data Engineers.",
+    expects: "Hipótesis claras antes de cada experimento. Criterios de éxito/abandono definidos. Timeboxing de exploraciones. Comunicación de resultados negativos también.",
+    cadence: "Standup 3x/semana (trabajo profundo). Experiment review semanal. Planning quincenal con objetivos, no tareas. Retro quincenal.",
+    friction: "La investigación no encaja en sprints rígidos. El AM usa objetivos de aprendizaje en vez de entregables fijos." },
+  bi: {
+    facilitates: "Filtra y prioriza el flujo constante de requests. Protege al equipo de la 'tiranía de lo urgente'. Negocia SLAs realistas. Da visibilidad del backlog a las áreas.",
+    expects: "Clasificación de requests (urgente/importante). Estimaciones rápidas. Feedback sobre carga de trabajo. Documentación de requerimientos recibidos.",
+    cadence: "Daily (15 min). Triage de requests 2x/semana. Delivery review semanal con stakeholders. Retro quincenal.",
+    friction: "Sobrecarga de pedidos ad-hoc que impide trabajo estratégico. El AM implementa intake y priorización transparente." },
+  ia: {
+    facilitates: "Gestiona la presión de 'hay que tener IA ya' con expectativas realistas. Coordina dependencias triples: datos, modelos y producto. Facilita ciclos prototipo → eval → producción. Gestiona el presupuesto de APIs.",
+    expects: "Transparencia sobre madurez de prototipos (demo ≠ producción). Evals antes de prometer fechas. Alertas tempranas de costos de API. Comunicación de riesgos de seguridad/calidad.",
+    cadence: "Daily (15 min). Demo interna semanal (se evalúa viendo). Planning quincenal. Retro quincenal. Review de costos mensual.",
+    friction: "Hype de stakeholders vs. realidad técnica (alucinaciones, costos, latencia). El AM traduce expectativas en ambas direcciones." },
+};
+
+const RACI = [
+  { act: "Arquitectura de la plataforma de datos", v: ["A/R", "C", "C", "C", "I", "I"] },
+  { act: "Desarrollo de pipelines ETL/ELT", v: ["R", "C", "I", "C", "I", "A"] },
+  { act: "Calidad y gobernanza de datos", v: ["A/R", "C", "R", "C", "I", "C"] },
+  { act: "Desarrollo de modelos ML propios", v: ["C", "A/R", "I", "C", "I", "I"] },
+  { act: "Experimentación y A/B testing", v: ["I", "A/R", "C", "C", "I", "C"] },
+  { act: "Features de IA en producto (GenAI/LLMs)", v: ["C", "C", "I", "A/R", "I", "C"] },
+  { act: "Evaluación y seguridad de sistemas de IA", v: ["I", "C", "I", "A/R", "I", "C"] },
+  { act: "Gestión de costos de IA (APIs, cómputo)", v: ["C", "C", "I", "A/R", "C", "I"] },
+  { act: "Dashboards y métricas corporativas", v: ["C", "C", "A/R", "C", "I", "I"] },
+  { act: "Definición de métricas de negocio", v: ["I", "C", "R", "I", "I", "A"] },
+  { act: "Planificación de sprints y delivery", v: ["C", "C", "C", "C", "A/R", "I"] },
+  { act: "Gestión de dependencias externas", v: ["C", "C", "C", "C", "A/R", "I"] },
+  { act: "Priorización del backlog", v: ["C", "C", "C", "C", "R", "A"] },
+  { act: "Promociones y evaluación técnica", v: ["C", "C", "C", "C", "C", "A/R"] },
+];
+const RACI_COLS = ["Ing. Datos", "Científico", "Analista BI", "Ing. IA", "Agile Mgr", "Líder T./E."];
+const RACI_COLORS = { "A/R": "#34d399", "A": "#22d3ee", "R": "#a78bfa", "C": "#fbbf24", "I": "#64748b" };
+
+/* ----------------------------- HELPERS ----------------------------- */
+function edge(a, b, r = 80) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  return { x1: a.x + (dx / len) * r, y1: a.y + (dy / len) * r, x2: b.x - (dx / len) * r, y2: b.y - (dy / len) * r };
+}
+
+/* ----------------------------- COMPONENTS ----------------------------- */
+function GraphView({ onSelect }) {
+  const [mode, setMode] = useState("value"); // value | lateral
+  const [hover, setHover] = useState(null);
+
+  return (
+    <div className="w-full">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-100">Grafo de roles y flujo</h2>
+          <p className="text-xs sm:text-sm text-slate-400">Toca un rol para ver sus 5 niveles y su carrera. Cada rol es un "recurso de nube".</p>
+        </div>
+        <div className="flex rounded-lg bg-slate-800/80 p-1 ring-1 ring-slate-700">
+          <button onClick={() => setMode("value")}
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "value" ? "bg-slate-700 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}>
+            Flujo de valor
+          </button>
+          <button onClick={() => setMode("lateral")}
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "lateral" ? "bg-slate-700 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}>
+            Movimientos laterales
+          </button>
+        </div>
+      </div>
+
+      <div className="relative rounded-2xl bg-slate-900/60 ring-1 ring-slate-800 overflow-hidden">
+        <svg viewBox="0 0 1000 620" className="w-full" style={{ display: "block" }}>
+          <defs>
+            <marker id="arrowV" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L7,3 L0,6 Z" fill="#475569" />
+            </marker>
+            <marker id="arrowL" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8" />
+            </marker>
+            <radialGradient id="bgGlow" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#1e293b" />
+              <stop offset="100%" stopColor="#0f172a" />
+            </radialGradient>
+          </defs>
+          <rect x="0" y="0" width="1000" height="620" fill="url(#bgGlow)" />
+
+          {/* value flow */}
+          {mode === "value" && VALUE_FLOW.map(([a, b], i) => {
+            const e = edge(ROLES[a].pos, ROLES[b].pos);
+            const active = hover === a || hover === b;
+            return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+              stroke={active ? ROLES[a].color : "#475569"} strokeWidth={active ? 3 : 2}
+              markerEnd="url(#arrowV)" opacity={hover && !active ? 0.25 : 0.9} />;
+          })}
+
+          {/* lateral */}
+          {mode === "lateral" && LATERAL.map((l, i) => {
+            const e = edge(ROLES[l.a].pos, ROLES[l.b].pos);
+            const active = hover === l.a || hover === l.b;
+            return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+              stroke={active ? ROLES[l.a].color : "#94a3b8"} strokeWidth={active ? 3 : 2}
+              strokeDasharray="7 6" markerEnd="url(#arrowL)" markerStart="url(#arrowL)"
+              opacity={hover && !active ? 0.2 : 0.85} />;
+          })}
+
+          {/* nodes */}
+          {ROLE_ORDER.map((k) => {
+            const r = ROLES[k];
+            const Icon = r.icon;
+            const x = r.pos.x - 95, y = r.pos.y - 62;
+            const hl = hover === k;
+            return (
+              <foreignObject key={k} x={x} y={y} width="190" height="124" style={{ overflow: "visible" }}>
+                <div
+                  onClick={() => onSelect(k)}
+                  onMouseEnter={() => setHover(k)}
+                  onMouseLeave={() => setHover(null)}
+                  className="h-full w-full rounded-2xl p-3 cursor-pointer select-none transition-all duration-200 flex flex-col justify-between"
+                  style={{
+                    background: "linear-gradient(160deg, rgba(30,41,59,0.95), rgba(15,23,42,0.95))",
+                    border: `1.5px solid ${hl ? r.color : "rgba(71,85,105,0.6)"}`,
+                    boxShadow: hl ? `0 0 0 3px ${r.soft}, 0 10px 30px -8px ${r.color}66` : "0 6px 18px -8px rgba(0,0,0,0.6)",
+                    transform: hl ? "translateY(-2px)" : "none",
+                  }}>
+                  <div className="flex items-center gap-2">
+                    <span className="flex items-center justify-center rounded-lg" style={{ width: 30, height: 30, background: r.soft }}>
+                      <Icon size={17} style={{ color: r.color }} />
+                    </span>
+                    <span className="text-[13px] font-bold leading-tight text-slate-100">{r.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Cloud size={12} className="text-slate-500 shrink-0" />
+                    <span className="text-[10px] text-slate-400 leading-tight">{r.cloudShort}</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] font-medium" style={{ color: r.color }}>5 niveles</span>
+                    <ChevronRight size={13} className="text-slate-500" />
+                  </div>
+                </div>
+              </foreignObject>
+            );
+          })}
+        </svg>
+
+        {/* legend */}
+        <div className="absolute bottom-2 left-3 right-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-slate-400">
+          {mode === "value" ? (
+            <>
+              <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#64748b" strokeWidth="2" markerEnd="url(#arrowV)"/></svg> Flujo de valor</span>
+              <span>Datos → Ciencia → IA, y BI consume de todos.</span>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 3"/></svg> Movimiento lateral (nivelación 3-6 meses)</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* lateral notes */}
+      {mode === "lateral" && (
+        <div className="mt-3 grid sm:grid-cols-2 gap-2">
+          {LATERAL.map((l, i) => (
+            <div key={i} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/70 p-3 text-xs">
+              <div className="flex items-center gap-2 mb-1 font-semibold text-slate-200">
+                <span style={{ color: ROLES[l.a].color }}>{ROLES[l.a].short}</span>
+                <ArrowRight size={13} className="text-slate-500" />
+                <span style={{ color: ROLES[l.b].color }}>{ROLES[l.b].short}</span>
+              </div>
+              <p className="text-slate-400 leading-snug">{l.note}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="mt-3 text-[11px] text-slate-500">Ruta alternativa para perfiles técnicos (IC): Senior → Staff → Principal, sin gestión de personas.</p>
+    </div>
+  );
+}
+
+function RoleDetail({ roleKey, onBack }) {
+  const r = ROLES[roleKey];
+  const Icon = r.icon;
+  const [level, setLevel] = useState("Junior");
+  const lvlIndex = LEVELS.indexOf(level);
+  const data = r.levels[level];
+  const prog = lvlIndex < 4 ? r.progression[lvlIndex] : null;
+
+  return (
+    <div className="w-full">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 mb-3 transition">
+        <ArrowLeft size={15} /> Volver al grafo
+      </button>
+
+      <div className="rounded-2xl p-4 sm:p-5 mb-4" style={{ background: `linear-gradient(135deg, ${r.soft}, rgba(15,23,42,0.4))`, border: `1px solid ${r.color}55` }}>
+        <div className="flex items-start gap-3">
+          <span className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 46, height: 46, background: r.soft }}>
+            <Icon size={24} style={{ color: r.color }} />
+          </span>
+          <div>
+            <h2 className="text-xl font-bold text-slate-100">{r.name}</h2>
+            <p className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+              <Cloud size={13} /> {r.cloud}
+            </p>
+            <p className="text-sm text-slate-300 mt-2 leading-snug">{r.mission}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* level ladder */}
+      <div className="flex items-stretch gap-1.5 mb-4 overflow-x-auto pb-1">
+        {LEVELS.map((lv, i) => {
+          const sel = lv === level;
+          return (
+            <button key={lv} onClick={() => setLevel(lv)}
+              className="flex-1 min-w-[88px] rounded-xl px-2 py-2.5 text-center transition-all"
+              style={{
+                background: sel ? r.soft : "rgba(30,41,59,0.5)",
+                border: `1.5px solid ${sel ? r.color : "rgba(71,85,105,0.5)"}`,
+              }}>
+              <div className="text-[10px] font-semibold tracking-wide" style={{ color: sel ? r.color : "#64748b" }}>TIER {i + 1}</div>
+              <div className={`text-xs font-bold leading-tight mt-0.5 ${sel ? "text-slate-100" : "text-slate-400"}`}>{lv}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* dimensions */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {DIMS.map((d) => {
+          const DIcon = d.icon;
+          return (
+            <div key={d.key} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/60 p-3.5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <DIcon size={15} style={{ color: r.color }} />
+                <span className="text-sm font-semibold text-slate-200">{d.label}</span>
+              </div>
+              <p className="text-[13px] text-slate-400 leading-relaxed">{data[d.key]}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* progression */}
+      {prog && (
+        <div className="mt-4 rounded-xl p-4" style={{ background: "rgba(30,41,59,0.5)", border: `1px dashed ${r.color}66` }}>
+          <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-200">
+            <Workflow size={15} style={{ color: r.color }} />
+            Progresión: {level} <ArrowRight size={14} style={{ color: r.color }} /> {prog.to}
+            <span className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: r.soft, color: r.color }}>{prog.time}</span>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3 mt-2">
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1 font-semibold">Criterios de promoción</div>
+              <p className="text-[13px] text-slate-400 leading-relaxed">{prog.criteria}</p>
+            </div>
+            <div>
+              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1 font-semibold">Cambio fundamental</div>
+              <p className="text-[13px] text-slate-300 leading-relaxed italic">{prog.change}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {!prog && (
+        <div className="mt-4 rounded-xl p-3.5 text-center text-[13px] text-slate-400" style={{ background: "rgba(30,41,59,0.5)", border: `1px solid ${r.color}44` }}>
+          Nivel cúspide de la ruta. Define la estrategia a 2-3 años y conecta con el nivel ejecutivo.
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgileView() {
+  const [sel, setSel] = useState("de");
+  const r = ROLES[sel];
+  const a = AGILE[sel];
+  const blocks = [
+    { t: "Qué le facilita el AM", v: a.facilitates, c: "#34d399" },
+    { t: "Qué espera el AM del rol", v: a.expects, c: "#38bdf8" },
+    { t: "Cadencia de interacción", v: a.cadence, c: "#a78bfa" },
+    { t: "Fricción típica y cómo se gestiona", v: a.friction, c: "#fbbf24" },
+  ];
+  return (
+    <div className="w-full">
+      <h2 className="text-lg sm:text-xl font-bold text-slate-100">El Agile Manager como orquestador</h2>
+      <p className="text-xs sm:text-sm text-slate-400 mb-4">No es un rol técnico: es el "control plane" del equipo. Selecciona un rol para ver su interacción.</p>
+
+      {/* mini orchestration map */}
+      <div className="rounded-2xl bg-slate-900/60 ring-1 ring-slate-800 p-4 mb-4">
+        <div className="text-center text-[11px] text-slate-500 mb-2">↑ Liderazgo ejecutivo · Product Owner / Negocio ↑</div>
+        <div className="mx-auto max-w-md rounded-xl py-2.5 text-center font-bold text-slate-100 mb-3"
+          style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.25),rgba(15,23,42,0.6))", border: "1px solid rgba(129,140,248,0.5)" }}>
+          AGILE MANAGER
+          <div className="text-[10px] font-normal text-slate-400">orquestador / control plane</div>
+        </div>
+        <div className="grid grid-cols-4 gap-2">
+          {ROLE_ORDER.map((k) => {
+            const rr = ROLES[k]; const RIcon = rr.icon; const on = sel === k;
+            return (
+              <button key={k} onClick={() => setSel(k)}
+                className="rounded-lg p-2 text-center transition-all"
+                style={{ background: on ? rr.soft : "rgba(30,41,59,0.5)", border: `1.5px solid ${on ? rr.color : "rgba(71,85,105,0.5)"}` }}>
+                <RIcon size={16} className="mx-auto" style={{ color: rr.color }} />
+                <div className={`text-[10px] font-semibold mt-1 leading-tight ${on ? "text-slate-100" : "text-slate-400"}`}>{rr.short}</div>
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-center text-[11px] text-slate-500 mt-3">↓ Infraestructura · Seguridad/Compliance · Otros equipos ↓</div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        {blocks.map((b) => (
+          <div key={b.t} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/60 p-3.5">
+            <div className="text-sm font-semibold mb-1.5" style={{ color: b.c }}>{b.t}</div>
+            <p className="text-[13px] text-slate-400 leading-relaxed">{b.v}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function RaciView() {
+  const [hl, setHl] = useState(null); // column index
+  return (
+    <div className="w-full">
+      <h2 className="text-lg sm:text-xl font-bold text-slate-100">Matriz RACI de actividades clave</h2>
+      <p className="text-xs sm:text-sm text-slate-400 mb-3">Pasa el cursor sobre una columna para resaltarla. A = Accountable · R = Responsible · C = Consulted · I = Informed.</p>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {Object.entries(RACI_COLORS).map(([k, c]) => (
+          <span key={k} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+            <span className="inline-block w-3 h-3 rounded" style={{ background: c }} />
+            <b className="text-slate-300">{k}</b>
+          </span>
+        ))}
+      </div>
+
+      <div className="overflow-x-auto rounded-xl ring-1 ring-slate-800">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-slate-800/80">
+              <th className="sticky left-0 z-10 bg-slate-800/95 px-3 py-2.5 text-xs font-semibold text-slate-300 min-w-[200px]">Actividad</th>
+              {RACI_COLS.map((c, i) => (
+                <th key={c} onMouseEnter={() => setHl(i)} onMouseLeave={() => setHl(null)}
+                  className="px-2 py-2.5 text-[11px] font-semibold text-center cursor-default transition"
+                  style={{ background: hl === i ? "rgba(51,65,85,0.8)" : undefined, color: hl === i ? "#fff" : "#cbd5e1" }}>
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {RACI.map((row, ri) => (
+              <tr key={ri} className={ri % 2 ? "bg-slate-900/40" : "bg-slate-900/10"}>
+                <td className="sticky left-0 z-10 px-3 py-2 text-[12px] text-slate-300 font-medium" style={{ background: ri % 2 ? "rgba(15,23,42,0.95)" : "rgba(15,23,42,0.85)" }}>{row.act}</td>
+                {row.v.map((val, ci) => (
+                  <td key={ci} onMouseEnter={() => setHl(ci)} onMouseLeave={() => setHl(null)}
+                    className="px-2 py-2 text-center transition"
+                    style={{ background: hl === ci ? "rgba(51,65,85,0.45)" : undefined }}>
+                    <span className="inline-flex items-center justify-center rounded-md text-[11px] font-bold px-1.5 py-0.5"
+                      style={{
+                        color: RACI_COLORS[val],
+                        background: `${RACI_COLORS[val]}1f`,
+                        border: `1px solid ${RACI_COLORS[val]}55`,
+                        opacity: hl !== null && hl !== ci ? 0.35 : 1,
+                      }}>{val}</span>
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-[11px] text-slate-500">Solo un <b>A</b> (Accountable) por fila. "A/R" indica que el mismo rol ejecuta y es responsable final.</p>
+    </div>
+  );
+}
+
+/* ----------------------------- ROOT ----------------------------- */
+export default function App() {
+  const [tab, setTab] = useState("graph"); // graph | agile | raci
+  const [role, setRole] = useState(null);
+
+  const tabs = [
+    { k: "graph", label: "Roles y flujo", icon: Network },
+    { k: "agile", label: "Agile Manager", icon: Workflow },
+    { k: "raci", label: "Matriz RACI", icon: Table2 },
+  ];
+
+  return (
+    <div className="min-h-screen w-full text-slate-200" style={{ background: "radial-gradient(120% 100% at 50% 0%, #0f172a 0%, #020617 70%)" }}>
+      <div className="mx-auto max-w-5xl px-3 sm:px-5 py-5">
+        {/* header */}
+        <div className="flex items-center gap-2.5 mb-1">
+          <span className="flex items-center justify-center rounded-xl" style={{ width: 38, height: 38, background: "rgba(56,189,248,0.15)" }}>
+            <Cloud size={20} className="text-sky-400" />
+          </span>
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-white leading-tight">Modelo de Roles de Datos e IA</h1>
+            <p className="text-[11px] sm:text-xs text-slate-400">Roles como recursos de nube · niveles · carrera · interacciones · v2.0</p>
+          </div>
+        </div>
+
+        {/* tabs */}
+        <div className="flex gap-1.5 my-4 overflow-x-auto pb-1">
+          {tabs.map((t) => {
+            const TIcon = t.icon; const on = tab === t.k && !(t.k === "graph" && role);
+            const active = tab === t.k;
+            return (
+              <button key={t.k} onClick={() => { setTab(t.k); setRole(null); }}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all"
+                style={{
+                  background: active ? "rgba(51,65,85,0.9)" : "rgba(30,41,59,0.4)",
+                  color: active ? "#fff" : "#94a3b8",
+                  border: `1px solid ${active ? "rgba(100,116,139,0.6)" : "rgba(51,65,85,0.4)"}`,
+                }}>
+                <TIcon size={15} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* content */}
+        <div className="rounded-2xl bg-slate-900/30 ring-1 ring-slate-800/60 p-4 sm:p-5">
+          {tab === "graph" && (role ? <RoleDetail roleKey={role} onBack={() => setRole(null)} /> : <GraphView onSelect={setRole} />)}
+          {tab === "agile" && <AgileView />}
+          {tab === "raci" && <RaciView />}
+        </div>
+
+        <p className="text-center text-[10px] text-slate-600 mt-4">Basado en el informe "Modelo de Roles del Equipo de Datos e IA" · revisión sugerida cada 12 meses.</p>
+      </div>
+    </div>
+  );
+}
