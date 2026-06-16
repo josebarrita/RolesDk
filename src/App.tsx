@@ -196,12 +196,24 @@ const DIMS = [
   { key: "kpi", label: "KPIs", icon: Gauge },
 ];
 
-const VALUE_FLOW: { a: string; b: string; label: string }[] = [
-  { a: "de", b: "ds", label: "datos limpios" },
-  { a: "ds", b: "ia", label: "modelos" },
-  { a: "de", b: "bi", label: "datos modelados" },
-  { a: "ds", b: "bi", label: "insights" },
-  { a: "ia", b: "bi", label: "features IA" },
+const VALUE_FLOW: { id: string; a: string; b: string; label: string }[] = [
+  { id: "de-ds", a: "de", b: "ds", label: "datos limpios" },
+  { id: "de-ia", a: "de", b: "ia", label: "datos para IA" },
+  { id: "de-bi", a: "de", b: "bi", label: "datos modelados" },
+  { id: "ds-ia", a: "ds", b: "ia", label: "modelos" },
+  { id: "ds-bi", a: "ds", b: "bi", label: "insights" },
+  { id: "ia-bi", a: "ia", b: "bi", label: "features IA" },
+];
+
+// Tipos de proyecto: qué flujos están activos en cada uno.
+// "opt" marca flujos opcionales (se ven atenuados con etiqueta "opcional").
+const PROJECT_TYPES: { key: string; label: string; active: string[]; opt?: string[] }[] = [
+  { key: "all", label: "Ver todo", active: ["de-ds", "de-ia", "de-bi", "ds-ia", "ds-bi", "ia-bi"] },
+  { key: "chatbot", label: "Chatbot / LLM externo", active: ["de-ia", "ia-bi"] },
+  { key: "modelo", label: "Modelo propio en producción", active: ["de-ds", "ds-ia", "ia-bi"] },
+  { key: "rag", label: "RAG corporativo", active: ["de-ia", "ia-bi"], opt: ["ds-ia"] },
+  { key: "analitica", label: "Analítica / Dashboard", active: ["de-ds", "de-bi", "ds-bi"] },
+  { key: "agentes", label: "Agentes SQL", active: ["de-ia", "de-bi", "ia-bi"] },
 ];
 const LATERAL = [
   { a: "de", b: "ia", note: "Aporta fortaleza en infraestructura; debe sumar conocimiento de LLMs y evals." },
@@ -264,6 +276,9 @@ function edge(a: {x: number, y: number}, b: {x: number, y: number}, r = 86) {
 function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
   const [mode, setMode] = useState("value");
   const [hover, setHover] = useState<string | null>(null);
+  const [project, setProject] = useState("all");
+
+  const proj = PROJECT_TYPES.find((p) => p.key === project) ?? PROJECT_TYPES[0];
 
   return (
     <div className="w-full">
@@ -284,6 +299,30 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
         </div>
       </div>
 
+      {/* selector de tipo de proyecto */}
+      {mode === "value" && (
+        <div className="mb-4">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Tipo de proyecto</div>
+          <div className="flex flex-wrap gap-1.5">
+            {PROJECT_TYPES.map((p) => {
+              const on = project === p.key;
+              return (
+                <button key={p.key} onClick={() => setProject(p.key)}
+                  className="px-3 py-1.5 text-xs font-medium rounded-lg transition-all"
+                  style={{
+                    background: on ? "linear-gradient(135deg,#0a6fb8,#1aa3c4)" : "#ffffff",
+                    color: on ? "#fff" : "#64748b",
+                    border: `1px solid ${on ? "transparent" : "#e2e8f0"}`,
+                    boxShadow: on ? "0 3px 10px -3px rgba(10,111,184,0.4)" : "none",
+                  }}>
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-white ring-1 ring-slate-200 overflow-hidden">
         <svg viewBox="0 0 1000 620" className="w-full" style={{ display: "block" }}>
           <defs>
@@ -298,18 +337,26 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
 
           {mode === "value" && VALUE_FLOW.map((f, i) => {
             const e = edge(ROLES[f.a].pos, ROLES[f.b].pos);
-            const active = hover === f.a || hover === f.b;
-            const dim = hover && !active;
+            const isActive = proj.active.includes(f.id);
+            const isOpt = proj.opt?.includes(f.id) ?? false;
+            const on = isActive || isOpt;
+            const hovered = hover === f.a || hover === f.b;
+            // atenuado si: no aplica al proyecto, o hay hover en otro rol
+            const dimmed = !on || (hover && !hovered);
+            const strokeColor = dimmed ? "#cbd5e1" : ROLES[f.a].color;
+            const labelText = isOpt ? `${f.label} (opcional)` : f.label;
+            const labelW = isOpt ? 112 : 88;
             return (
-              <g key={i} opacity={dim ? 0.18 : 1}>
+              <g key={i} opacity={dimmed ? 0.2 : 1}>
                 <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-                  stroke={active ? ROLES[f.a].color : "#cbd5e1"} strokeWidth={active ? 3.5 : 2.5}
+                  stroke={strokeColor} strokeWidth={hovered && on ? 3.5 : 2.5}
+                  strokeDasharray={isOpt ? "7 5" : undefined}
                   markerEnd="url(#arrowV)" />
                 <g transform={`translate(${e.mx}, ${e.my})`}>
-                  <rect x="-44" y="-11" width="88" height="22" rx="11"
-                    fill="white" stroke={active ? ROLES[f.a].color : "#e2e8f0"} strokeWidth="1.5" />
+                  <rect x={-labelW / 2} y="-11" width={labelW} height="22" rx="11"
+                    fill="white" stroke={dimmed ? "#e2e8f0" : ROLES[f.a].color} strokeWidth="1.5" />
                   <text x="0" y="4" textAnchor="middle" fontSize="11" fontWeight="600"
-                    fill={active ? ROLES[f.a].color : "#64748b"}>{f.label}</text>
+                    fill={dimmed ? "#94a3b8" : ROLES[f.a].color}>{labelText}</text>
                 </g>
               </g>
             );
@@ -368,9 +415,19 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
             <>
               <span className="flex items-center gap-1.5">
                 <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="#0a6fb8" strokeWidth="2.5" markerEnd="url(#arrowV)"/></svg>
-                Flujo de valor
+                Flujo activo
               </span>
-              <span className="text-slate-400">Los datos fluyen de Ingeniería → Ciencia → IA, y BI consume de todos para llegar al negocio.</span>
+              {proj.opt && proj.opt.length > 0 && (
+                <span className="flex items-center gap-1.5">
+                  <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="#0a6fb8" strokeWidth="2.5" strokeDasharray="5 3"/></svg>
+                  Flujo opcional
+                </span>
+              )}
+              <span className="text-slate-400">
+                {project === "all"
+                  ? "Mostrando todos los flujos posibles. Elige un tipo de proyecto para resaltar solo los que aplican."
+                  : `Flujos activos para "${proj.label}". Los demás se atenúan.`}
+              </span>
             </>
           ) : (
             <span className="flex items-center gap-1.5">
