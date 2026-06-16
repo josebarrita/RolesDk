@@ -1,73 +1,94 @@
-# React + TypeScript + Vite
+# Modelo de Roles de Datos e IA
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Visualización interactiva de los roles del equipo de Datos e Inteligencia Artificial de DataKnow: niveles de carrera, progresión, interacciones y matriz RACI. Cada rol se modela como un "recurso de nube".
 
-Currently, two official plugins are available:
+🔗 **App en vivo:** https://josebarrita.github.io/RolesDk/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## ¿Qué hace?
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+La aplicación presenta el modelo de roles del equipo en tres vistas:
 
-## Expanding the ESLint configuration
+- **Roles y flujo** — un grafo interactivo de los cuatro roles técnicos (Ingeniero de Datos, Científico de Datos, Analista BI e Ingeniero de IA). Incluye un selector de tipo de proyecto que resalta los flujos de valor que aplican a cada caso (Chatbot/LLM externo, Modelo propio, RAG corporativo, Analítica/Dashboard, Agentes SQL). Al tocar un rol se despliegan sus 5 niveles de seniority con responsabilidades, habilidades, alcance, autonomía, KPIs y criterios de promoción.
+- **Agile Manager** — muestra cómo el Agile Manager orquesta la interacción con cada rol: qué facilita, qué espera, la cadencia y las fricciones típicas.
+- **Matriz RACI** — tabla de actividades clave con la responsabilidad de cada rol (Accountable, Responsible, Consulted, Informed).
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Stack tecnológico
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+| Herramienta | Uso |
+|-------------|-----|
+| React | Librería de interfaz |
+| TypeScript | Tipado estático |
+| Vite | Build y servidor de desarrollo |
+| Tailwind CSS | Estilos |
+| lucide-react | Íconos |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Ejecutar en local
+
+Requiere [Node.js](https://nodejs.org/) (versión LTS).
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/josebarrita/RolesDk.git
+cd RolesDk
+
+# 2. Instalar dependencias
+npm install
+
+# 3. Levantar el servidor de desarrollo
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Luego abre `http://localhost:5173/` en el navegador.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+---
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Comandos disponibles
+
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Servidor de desarrollo con recarga en caliente |
+| `npm run build` | Compila la app para producción (carpeta `dist/`) |
+| `npm run preview` | Previsualiza el build de producción en local |
+
+---
+
+## Despliegue
+
+El proyecto se publica automáticamente en **GitHub Pages** mediante GitHub Actions. Cada `push` a la rama `main` dispara el workflow definido en `.github/workflows/deploy.yml`, que construye la app y la publica en la rama `gh-pages`.
+
+```bash
+git add .
+git commit -m "descripción del cambio"
+git push
 ```
+
+En 1-2 minutos los cambios quedan en línea.
+
+---
+
+## Estructura del proyecto
+
+```
+RolesDk/
+├── .github/workflows/   # Workflow de despliegue automático
+├── public/              # Archivos estáticos
+├── src/
+│   ├── App.tsx          # Componente principal (toda la lógica y datos)
+│   ├── main.tsx         # Punto de entrada
+│   └── index.css        # Estilos base (Tailwind)
+├── index.html
+├── vite.config.ts       # Configuración de Vite (incluye base para GitHub Pages)
+└── package.json
+```
+
+---
+
+## Fuente del modelo
+
+Basado en el informe interno *"Modelo de Roles del Equipo de Datos e IA"*. Revisión sugerida cada 12 meses.
