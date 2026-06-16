@@ -7,10 +7,10 @@ const ROLE_ORDER = ["de", "ds", "bi", "ia"];
 const ROLES = {
   de: {
     name: "Ingeniero de Datos", short: "Ing. Datos", icon: Database,
-    color: "#38bdf8", soft: "rgba(56,189,248,0.12)",
+    color: "#0a6fb8", soft: "rgba(10,111,184,0.10)",
     cloud: "Compute + Storage + Networking", cloudShort: "Infraestructura base",
     mission: "Garantizar que los datos correctos lleguen al lugar correcto, en el momento correcto, con la calidad correcta.",
-    pos: { x: 165, y: 315 },
+    pos: { x: 150, y: 310 },
     levels: {
       Junior: {
         resp: "Desarrolla pipelines de datos básicos bajo supervisión directa. Ejecuta procesos ETL simples ya diseñados. Documenta procesos técnicos. Limpia y valida datasets. Resuelve bugs de baja complejidad.",
@@ -52,10 +52,10 @@ const ROLES = {
   },
   ds: {
     name: "Científico de Datos", short: "Científico", icon: Brain,
-    color: "#a78bfa", soft: "rgba(167,139,250,0.12)",
+    color: "#1aa3c4", soft: "rgba(26,163,196,0.10)",
     cloud: "Servicios de ML gestionado", cloudShort: "Motor de inteligencia",
     mission: "Resolver problemas de negocio mediante modelos estadísticos y de machine learning que generen valor medible.",
-    pos: { x: 500, y: 130 },
+    pos: { x: 500, y: 120 },
     levels: {
       Junior: {
         resp: "Realiza análisis exploratorio (EDA) supervisado. Construye modelos simples (regresión, árboles) con guía. Prepara y limpia datos. Apoya en visualizaciones. Documenta experimentos.",
@@ -97,7 +97,7 @@ const ROLES = {
   },
   bi: {
     name: "Analista de Datos (BI)", short: "Analista BI", icon: BarChart3,
-    color: "#fbbf24", soft: "rgba(251,191,36,0.12)",
+    color: "#f59e0b", soft: "rgba(245,158,11,0.10)",
     cloud: "Capa de presentación / API Gateway", cloudShort: "Interfaz con el negocio",
     mission: "Que cada decisión de negocio relevante esté soportada por datos confiables, accesibles y entendibles.",
     pos: { x: 500, y: 500 },
@@ -142,10 +142,10 @@ const ROLES = {
   },
   ia: {
     name: "Ingeniero de IA", short: "Ing. IA", icon: Sparkles,
-    color: "#34d399", soft: "rgba(52,211,153,0.12)",
+    color: "#0d9488", soft: "rgba(13,148,136,0.10)",
     cloud: "IA gestionada / Serverless", cloudShort: "Capa más cercana al producto",
     mission: "Convertir capacidades de IA (modelos propios y de terceros) en productos de producción que generen valor, con seguridad, observabilidad y costos controlados.",
-    pos: { x: 835, y: 315 },
+    pos: { x: 850, y: 310 },
     levels: {
       Junior: {
         resp: "Implementa integraciones básicas con APIs de LLMs bajo supervisión. Escribe y prueba prompts. Construye prototipos simples (chatbots, clasificadores con LLM). Documenta fallos. Ejecuta evaluaciones definidas por otros.",
@@ -196,8 +196,12 @@ const DIMS = [
   { key: "kpi", label: "KPIs", icon: Gauge },
 ];
 
-const VALUE_FLOW = [
-  ["de", "ds"], ["ds", "ia"], ["de", "bi"], ["ds", "bi"], ["ia", "bi"],
+const VALUE_FLOW: { a: string; b: string; label: string }[] = [
+  { a: "de", b: "ds", label: "datos limpios" },
+  { a: "ds", b: "ia", label: "modelos" },
+  { a: "de", b: "bi", label: "datos modelados" },
+  { a: "ds", b: "bi", label: "insights" },
+  { a: "ia", b: "bi", label: "features IA" },
 ];
 const LATERAL = [
   { a: "de", b: "ia", note: "Aporta fortaleza en infraestructura; debe sumar conocimiento de LLMs y evals." },
@@ -246,13 +250,14 @@ const RACI = [
   { act: "Promociones y evaluación técnica", v: ["C", "C", "C", "C", "C", "A/R"] },
 ];
 const RACI_COLS = ["Ing. Datos", "Científico", "Analista BI", "Ing. IA", "Agile Mgr", "Líder T./E."];
-const RACI_COLORS: Record<string, string> = { "A/R": "#34d399", "A": "#22d3ee", "R": "#a78bfa", "C": "#fbbf24", "I": "#64748b" };
+const RACI_COLORS: Record<string, string> = { "A/R": "#0d9488", "A": "#1aa3c4", "R": "#0a6fb8", "C": "#f59e0b", "I": "#94a3b8" };
 
 /* ----------------------------- HELPERS ----------------------------- */
-function edge(a: {x: number, y: number}, b: {x: number, y: number}, r = 80) {
+function edge(a: {x: number, y: number}, b: {x: number, y: number}, r = 86) {
   const dx = b.x - a.x, dy = b.y - a.y;
   const len = Math.hypot(dx, dy);
-  return { x1: a.x + (dx / len) * r, y1: a.y + (dy / len) * r, x2: b.x - (dx / len) * r, y2: b.y - (dy / len) * r };
+  return { x1: a.x + (dx / len) * r, y1: a.y + (dy / len) * r, x2: b.x - (dx / len) * r, y2: b.y - (dy / len) * r,
+    mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
 }
 
 /* ----------------------------- COMPONENTS ----------------------------- */
@@ -264,43 +269,50 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
     <div className="w-full">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-100">Grafo de roles y flujo</h2>
-          <p className="text-xs sm:text-sm text-slate-400">Toca un rol para ver sus 5 niveles y su carrera. Cada rol es un "recurso de nube".</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-800">Grafo de roles y flujo</h2>
+          <p className="text-xs sm:text-sm text-slate-500">Toca un rol para ver sus 5 niveles y su carrera. Cada rol es un "recurso de nube".</p>
         </div>
-        <div className="flex rounded-lg bg-slate-800/80 p-1 ring-1 ring-slate-700">
+        <div className="flex rounded-lg bg-slate-100 p-1 ring-1 ring-slate-200">
           <button onClick={() => setMode("value")}
-            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "value" ? "bg-slate-700 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}>
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "value" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             Flujo de valor
           </button>
           <button onClick={() => setMode("lateral")}
-            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "lateral" ? "bg-slate-700 text-white shadow" : "text-slate-400 hover:text-slate-200"}`}>
+            className={`px-3 py-1.5 text-xs sm:text-sm rounded-md font-medium transition ${mode === "lateral" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
             Movimientos laterales
           </button>
         </div>
       </div>
 
-      <div className="relative rounded-2xl bg-slate-900/60 ring-1 ring-slate-800 overflow-hidden">
+      <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-white ring-1 ring-slate-200 overflow-hidden">
         <svg viewBox="0 0 1000 620" className="w-full" style={{ display: "block" }}>
           <defs>
-            <marker id="arrowV" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-              <path d="M0,0 L7,3 L0,6 Z" fill="#475569" />
+            <marker id="arrowV" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#0a6fb8" />
             </marker>
-            <marker id="arrowL" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-              <path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8" />
+            <marker id="arrowL" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#64748b" />
             </marker>
-            <radialGradient id="bgGlow" cx="50%" cy="40%" r="60%">
-              <stop offset="0%" stopColor="#1e293b" />
-              <stop offset="100%" stopColor="#0f172a" />
-            </radialGradient>
           </defs>
-          <rect x="0" y="0" width="1000" height="620" fill="url(#bgGlow)" />
+          <rect x="0" y="0" width="1000" height="620" fill="transparent" />
 
-          {mode === "value" && VALUE_FLOW.map(([a, b], i) => {
-            const e = edge(ROLES[a].pos, ROLES[b].pos);
-            const active = hover === a || hover === b;
-            return <line key={i} x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
-              stroke={active ? ROLES[a].color : "#475569"} strokeWidth={active ? 3 : 2}
-              markerEnd="url(#arrowV)" opacity={hover && !active ? 0.25 : 0.9} />;
+          {mode === "value" && VALUE_FLOW.map((f, i) => {
+            const e = edge(ROLES[f.a].pos, ROLES[f.b].pos);
+            const active = hover === f.a || hover === f.b;
+            const dim = hover && !active;
+            return (
+              <g key={i} opacity={dim ? 0.18 : 1}>
+                <line x1={e.x1} y1={e.y1} x2={e.x2} y2={e.y2}
+                  stroke={active ? ROLES[f.a].color : "#cbd5e1"} strokeWidth={active ? 3.5 : 2.5}
+                  markerEnd="url(#arrowV)" />
+                <g transform={`translate(${e.mx}, ${e.my})`}>
+                  <rect x="-44" y="-11" width="88" height="22" rx="11"
+                    fill="white" stroke={active ? ROLES[f.a].color : "#e2e8f0"} strokeWidth="1.5" />
+                  <text x="0" y="4" textAnchor="middle" fontSize="11" fontWeight="600"
+                    fill={active ? ROLES[f.a].color : "#64748b"}>{f.label}</text>
+                </g>
+              </g>
+            );
           })}
 
           {mode === "lateral" && LATERAL.map((l, i) => {
@@ -315,34 +327,35 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
           {ROLE_ORDER.map((k) => {
             const r = ROLES[k];
             const Icon = r.icon;
-            const x = r.pos.x - 95, y = r.pos.y - 62;
+            const x = r.pos.x - 98, y = r.pos.y - 64;
             const hl = hover === k;
             return (
-              <foreignObject key={k} x={x} y={y} width="190" height="124" style={{ overflow: "visible" }}>
+              <foreignObject key={k} x={x} y={y} width="196" height="128" style={{ overflow: "visible" }}>
                 <div
                   onClick={() => onSelect(k)}
                   onMouseEnter={() => setHover(k)}
                   onMouseLeave={() => setHover(null)}
-                  className="h-full w-full rounded-2xl p-3 cursor-pointer select-none transition-all duration-200 flex flex-col justify-between"
+                  className="h-full w-full rounded-2xl p-3 cursor-pointer select-none transition-all duration-200 flex flex-col justify-between bg-white"
                   style={{
-                    background: "linear-gradient(160deg, rgba(30,41,59,0.95), rgba(15,23,42,0.95))",
-                    border: `1.5px solid ${hl ? r.color : "rgba(71,85,105,0.6)"}`,
-                    boxShadow: hl ? `0 0 0 3px ${r.soft}, 0 10px 30px -8px ${r.color}66` : "0 6px 18px -8px rgba(0,0,0,0.6)",
-                    transform: hl ? "translateY(-2px)" : "none",
+                    border: `2px solid ${hl ? r.color : "#e2e8f0"}`,
+                    boxShadow: hl ? `0 0 0 4px ${r.soft}, 0 12px 28px -10px ${r.color}55` : "0 4px 14px -6px rgba(15,23,42,0.12)",
+                    transform: hl ? "translateY(-3px)" : "none",
                   }}>
                   <div className="flex items-center gap-2">
-                    <span className="flex items-center justify-center rounded-lg" style={{ width: 30, height: 30, background: r.soft }}>
-                      <Icon size={17} style={{ color: r.color }} />
+                    <span className="flex items-center justify-center rounded-lg" style={{ width: 32, height: 32, background: r.soft }}>
+                      <Icon size={18} style={{ color: r.color }} />
                     </span>
-                    <span className="text-[13px] font-bold leading-tight text-slate-100">{r.name}</span>
+                    <span className="text-[13px] font-bold leading-tight text-slate-800">{r.name}</span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Cloud size={12} className="text-slate-500 shrink-0" />
-                    <span className="text-[10px] text-slate-400 leading-tight">{r.cloudShort}</span>
+                    <Cloud size={12} className="text-slate-400 shrink-0" />
+                    <span className="text-[10px] text-slate-500 leading-tight">{r.cloudShort}</span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] font-medium" style={{ color: r.color }}>5 niveles</span>
-                    <ChevronRight size={13} className="text-slate-500" />
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: r.soft, color: r.color }}>5 niveles</span>
+                    <span className="flex items-center gap-0.5 text-[10px] font-medium" style={{ color: r.color }}>
+                      Ver <ChevronRight size={12} />
+                    </span>
                   </div>
                 </div>
               </foreignObject>
@@ -350,16 +363,20 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
           })}
         </svg>
 
-        <div className="absolute bottom-2 left-3 right-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] sm:text-xs text-slate-400">
+        <div className="border-t border-slate-100 px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] sm:text-xs text-slate-500">
           {mode === "value" ? (
             <>
-              <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#64748b" strokeWidth="2" markerEnd="url(#arrowV)"/></svg> Flujo de valor</span>
-              <span>Datos → Ciencia → IA, y BI consume de todos.</span>
+              <span className="flex items-center gap-1.5">
+                <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="#0a6fb8" strokeWidth="2.5" markerEnd="url(#arrowV)"/></svg>
+                Flujo de valor
+              </span>
+              <span className="text-slate-400">Los datos fluyen de Ingeniería → Ciencia → IA, y BI consume de todos para llegar al negocio.</span>
             </>
           ) : (
-            <>
-              <span className="flex items-center gap-1.5"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#94a3b8" strokeWidth="2" strokeDasharray="4 3"/></svg> Movimiento lateral (nivelación 3-6 meses)</span>
-            </>
+            <span className="flex items-center gap-1.5">
+              <svg width="24" height="8"><line x1="0" y1="4" x2="24" y2="4" stroke="#64748b" strokeWidth="2" strokeDasharray="4 3"/></svg>
+              Movimiento lateral entre roles (nivelación de 3-6 meses)
+            </span>
           )}
         </div>
       </div>
@@ -367,18 +384,18 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
       {mode === "lateral" && (
         <div className="mt-3 grid sm:grid-cols-2 gap-2">
           {LATERAL.map((l, i) => (
-            <div key={i} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/70 p-3 text-xs">
-              <div className="flex items-center gap-2 mb-1 font-semibold text-slate-200">
+            <div key={i} className="rounded-xl bg-white ring-1 ring-slate-200 p-3 text-xs shadow-sm">
+              <div className="flex items-center gap-2 mb-1 font-semibold text-slate-700">
                 <span style={{ color: ROLES[l.a].color }}>{ROLES[l.a].short}</span>
-                <ArrowRight size={13} className="text-slate-500" />
+                <ArrowRight size={13} className="text-slate-400" />
                 <span style={{ color: ROLES[l.b].color }}>{ROLES[l.b].short}</span>
               </div>
-              <p className="text-slate-400 leading-snug">{l.note}</p>
+              <p className="text-slate-500 leading-snug">{l.note}</p>
             </div>
           ))}
         </div>
       )}
-      <p className="mt-3 text-[11px] text-slate-500">Ruta alternativa para perfiles técnicos (IC): Senior → Staff → Principal, sin gestión de personas.</p>
+      <p className="mt-3 text-[11px] text-slate-400">Ruta alternativa para perfiles técnicos (IC): Senior → Staff → Principal, sin gestión de personas.</p>
     </div>
   );
 }
@@ -393,21 +410,21 @@ function RoleDetail({ roleKey, onBack }: { roleKey: string; onBack: () => void }
 
   return (
     <div className="w-full">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-slate-200 mb-3 transition">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-3 transition">
         <ArrowLeft size={15} /> Volver al grafo
       </button>
 
-      <div className="rounded-2xl p-4 sm:p-5 mb-4" style={{ background: `linear-gradient(135deg, ${r.soft}, rgba(15,23,42,0.4))`, border: `1px solid ${r.color}55` }}>
+      <div className="rounded-2xl p-4 sm:p-5 mb-4" style={{ background: r.soft, border: `1px solid ${r.color}33` }}>
         <div className="flex items-start gap-3">
-          <span className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 46, height: 46, background: r.soft }}>
+          <span className="flex items-center justify-center rounded-xl shrink-0 bg-white" style={{ width: 46, height: 46, boxShadow: `0 2px 8px -2px ${r.color}44` }}>
             <Icon size={24} style={{ color: r.color }} />
           </span>
           <div>
-            <h2 className="text-xl font-bold text-slate-100">{r.name}</h2>
-            <p className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+            <h2 className="text-xl font-bold text-slate-800">{r.name}</h2>
+            <p className="flex items-center gap-1.5 text-xs text-slate-500 mt-0.5">
               <Cloud size={13} /> {r.cloud}
             </p>
-            <p className="text-sm text-slate-300 mt-2 leading-snug">{r.mission}</p>
+            <p className="text-sm text-slate-600 mt-2 leading-snug">{r.mission}</p>
           </div>
         </div>
       </div>
@@ -417,13 +434,13 @@ function RoleDetail({ roleKey, onBack }: { roleKey: string; onBack: () => void }
           const sel = lv === level;
           return (
             <button key={lv} onClick={() => setLevel(lv)}
-              className="flex-1 min-w-[88px] rounded-xl px-2 py-2.5 text-center transition-all"
+              className="flex-1 min-w-[88px] rounded-xl px-2 py-2.5 text-center transition-all bg-white"
               style={{
-                background: sel ? r.soft : "rgba(30,41,59,0.5)",
-                border: `1.5px solid ${sel ? r.color : "rgba(71,85,105,0.5)"}`,
+                background: sel ? r.soft : "#ffffff",
+                border: `1.5px solid ${sel ? r.color : "#e2e8f0"}`,
               }}>
-              <div className="text-[10px] font-semibold tracking-wide" style={{ color: sel ? r.color : "#64748b" }}>TIER {i + 1}</div>
-              <div className={`text-xs font-bold leading-tight mt-0.5 ${sel ? "text-slate-100" : "text-slate-400"}`}>{lv}</div>
+              <div className="text-[10px] font-semibold tracking-wide" style={{ color: sel ? r.color : "#94a3b8" }}>TIER {i + 1}</div>
+              <div className={`text-xs font-bold leading-tight mt-0.5 ${sel ? "text-slate-800" : "text-slate-500"}`}>{lv}</div>
             </button>
           );
         })}
@@ -433,38 +450,38 @@ function RoleDetail({ roleKey, onBack }: { roleKey: string; onBack: () => void }
         {DIMS.map((d) => {
           const DIcon = d.icon;
           return (
-            <div key={d.key} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/60 p-3.5">
+            <div key={d.key} className="rounded-xl bg-white ring-1 ring-slate-200 p-3.5 shadow-sm">
               <div className="flex items-center gap-2 mb-1.5">
                 <DIcon size={15} style={{ color: r.color }} />
-                <span className="text-sm font-semibold text-slate-200">{d.label}</span>
+                <span className="text-sm font-semibold text-slate-700">{d.label}</span>
               </div>
-              <p className="text-[13px] text-slate-400 leading-relaxed">{data[d.key as keyof typeof data]}</p>
+              <p className="text-[13px] text-slate-500 leading-relaxed">{data[d.key as keyof typeof data]}</p>
             </div>
           );
         })}
       </div>
 
       {prog && (
-        <div className="mt-4 rounded-xl p-4" style={{ background: "rgba(30,41,59,0.5)", border: `1px dashed ${r.color}66` }}>
-          <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-200">
+        <div className="mt-4 rounded-xl p-4 bg-white" style={{ border: `1px dashed ${r.color}66` }}>
+          <div className="flex items-center gap-2 mb-2 text-sm font-semibold text-slate-700">
             <Workflow size={15} style={{ color: r.color }} />
             Progresión: {level} <ArrowRight size={14} style={{ color: r.color }} /> {prog.to}
             <span className="ml-auto text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ background: r.soft, color: r.color }}>{prog.time}</span>
           </div>
           <div className="grid sm:grid-cols-2 gap-3 mt-2">
             <div>
-              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1 font-semibold">Criterios de promoción</div>
-              <p className="text-[13px] text-slate-400 leading-relaxed">{prog.criteria}</p>
+              <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1 font-semibold">Criterios de promoción</div>
+              <p className="text-[13px] text-slate-500 leading-relaxed">{prog.criteria}</p>
             </div>
             <div>
-              <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1 font-semibold">Cambio fundamental</div>
-              <p className="text-[13px] text-slate-300 leading-relaxed italic">{prog.change}</p>
+              <div className="text-[11px] uppercase tracking-wide text-slate-400 mb-1 font-semibold">Cambio fundamental</div>
+              <p className="text-[13px] text-slate-600 leading-relaxed italic">{prog.change}</p>
             </div>
           </div>
         </div>
       )}
       {!prog && (
-        <div className="mt-4 rounded-xl p-3.5 text-center text-[13px] text-slate-400" style={{ background: "rgba(30,41,59,0.5)", border: `1px solid ${r.color}44` }}>
+        <div className="mt-4 rounded-xl p-3.5 text-center text-[13px] text-slate-500 bg-white" style={{ border: `1px solid ${r.color}44` }}>
           Nivel cúspide de la ruta. Define la estrategia a 2-3 años y conecta con el nivel ejecutivo.
         </div>
       )}
@@ -477,44 +494,44 @@ function AgileView() {
   const r = ROLES[sel];
   const a = AGILE[sel];
   const blocks = [
-    { t: "Qué le facilita el AM", v: a.facilitates, c: "#34d399" },
-    { t: "Qué espera el AM del rol", v: a.expects, c: "#38bdf8" },
-    { t: "Cadencia de interacción", v: a.cadence, c: "#a78bfa" },
-    { t: "Fricción típica y cómo se gestiona", v: a.friction, c: "#fbbf24" },
+    { t: "Qué le facilita el AM", v: a.facilitates, c: "#0d9488" },
+    { t: "Qué espera el AM del rol", v: a.expects, c: "#0a6fb8" },
+    { t: "Cadencia de interacción", v: a.cadence, c: "#1aa3c4" },
+    { t: "Fricción típica y cómo se gestiona", v: a.friction, c: "#f59e0b" },
   ];
   return (
     <div className="w-full">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-100">El Agile Manager como orquestador</h2>
-      <p className="text-xs sm:text-sm text-slate-400 mb-4">No es un rol técnico: es el "control plane" del equipo. Selecciona un rol para ver su interacción.</p>
+      <h2 className="text-lg sm:text-xl font-bold text-slate-800">El Agile Manager como orquestador</h2>
+      <p className="text-xs sm:text-sm text-slate-500 mb-4">No es un rol técnico: es el "control plane" del equipo. Selecciona un rol para ver su interacción.</p>
 
-      <div className="rounded-2xl bg-slate-900/60 ring-1 ring-slate-800 p-4 mb-4">
-        <div className="text-center text-[11px] text-slate-500 mb-2">↑ Liderazgo ejecutivo · Product Owner / Negocio ↑</div>
-        <div className="mx-auto max-w-md rounded-xl py-2.5 text-center font-bold text-slate-100 mb-3"
-          style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.25),rgba(15,23,42,0.6))", border: "1px solid rgba(129,140,248,0.5)" }}>
+      <div className="rounded-2xl bg-gradient-to-b from-slate-50 to-white ring-1 ring-slate-200 p-4 mb-4">
+        <div className="text-center text-[11px] text-slate-400 mb-2">↑ Liderazgo ejecutivo · Product Owner / Negocio ↑</div>
+        <div className="mx-auto max-w-md rounded-xl py-2.5 text-center font-bold text-white mb-3"
+          style={{ background: "linear-gradient(135deg,#0a6fb8,#1aa3c4)", boxShadow: "0 6px 18px -8px rgba(10,111,184,0.5)" }}>
           AGILE MANAGER
-          <div className="text-[10px] font-normal text-slate-400">orquestador / control plane</div>
+          <div className="text-[10px] font-normal text-sky-100">orquestador / control plane</div>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {ROLE_ORDER.map((k) => {
             const rr = ROLES[k]; const RIcon = rr.icon; const on = sel === k;
             return (
               <button key={k} onClick={() => setSel(k)}
-                className="rounded-lg p-2 text-center transition-all"
-                style={{ background: on ? rr.soft : "rgba(30,41,59,0.5)", border: `1.5px solid ${on ? rr.color : "rgba(71,85,105,0.5)"}` }}>
+                className="rounded-lg p-2 text-center transition-all bg-white"
+                style={{ background: on ? rr.soft : "#ffffff", border: `1.5px solid ${on ? rr.color : "#e2e8f0"}` }}>
                 <RIcon size={16} className="mx-auto" style={{ color: rr.color }} />
-                <div className={`text-[10px] font-semibold mt-1 leading-tight ${on ? "text-slate-100" : "text-slate-400"}`}>{rr.short}</div>
+                <div className={`text-[10px] font-semibold mt-1 leading-tight ${on ? "text-slate-800" : "text-slate-500"}`}>{rr.short}</div>
               </button>
             );
           })}
         </div>
-        <div className="text-center text-[11px] text-slate-500 mt-3">↓ Infraestructura · Seguridad/Compliance · Otros equipos ↓</div>
+        <div className="text-center text-[11px] text-slate-400 mt-3">↓ Infraestructura · Seguridad/Compliance · Otros equipos ↓</div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
         {blocks.map((b) => (
-          <div key={b.t} className="rounded-xl bg-slate-800/50 ring-1 ring-slate-700/60 p-3.5">
+          <div key={b.t} className="rounded-xl bg-white ring-1 ring-slate-200 p-3.5 shadow-sm">
             <div className="text-sm font-semibold mb-1.5" style={{ color: b.c }}>{b.t}</div>
-            <p className="text-[13px] text-slate-400 leading-relaxed">{b.v}</p>
+            <p className="text-[13px] text-slate-500 leading-relaxed">{b.v}</p>
           </div>
         ))}
       </div>
@@ -526,27 +543,27 @@ function RaciView() {
   const [hl, setHl] = useState<number | null>(null);
   return (
     <div className="w-full">
-      <h2 className="text-lg sm:text-xl font-bold text-slate-100">Matriz RACI de actividades clave</h2>
-      <p className="text-xs sm:text-sm text-slate-400 mb-3">Pasa el cursor sobre una columna para resaltarla. A = Accountable · R = Responsible · C = Consulted · I = Informed.</p>
+      <h2 className="text-lg sm:text-xl font-bold text-slate-800">Matriz RACI de actividades clave</h2>
+      <p className="text-xs sm:text-sm text-slate-500 mb-3">Pasa el cursor sobre una columna para resaltarla. A = Accountable · R = Responsible · C = Consulted · I = Informed.</p>
 
       <div className="flex flex-wrap gap-2 mb-3">
         {Object.entries(RACI_COLORS).map(([k, c]) => (
-          <span key={k} className="flex items-center gap-1.5 text-[11px] text-slate-400">
+          <span key={k} className="flex items-center gap-1.5 text-[11px] text-slate-500">
             <span className="inline-block w-3 h-3 rounded" style={{ background: c }} />
-            <b className="text-slate-300">{k}</b>
+            <b className="text-slate-700">{k}</b>
           </span>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl ring-1 ring-slate-800">
+      <div className="overflow-x-auto rounded-xl ring-1 ring-slate-200">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-slate-800/80">
-              <th className="sticky left-0 z-10 bg-slate-800/95 px-3 py-2.5 text-xs font-semibold text-slate-300 min-w-[200px]">Actividad</th>
+            <tr className="bg-slate-50">
+              <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2.5 text-xs font-semibold text-slate-600 min-w-[200px]">Actividad</th>
               {RACI_COLS.map((c, i) => (
                 <th key={c} onMouseEnter={() => setHl(i)} onMouseLeave={() => setHl(null)}
                   className="px-2 py-2.5 text-[11px] font-semibold text-center cursor-default transition"
-                  style={{ background: hl === i ? "rgba(51,65,85,0.8)" : undefined, color: hl === i ? "#fff" : "#cbd5e1" }}>
+                  style={{ background: hl === i ? "#e0f2fe" : undefined, color: hl === i ? "#0a6fb8" : "#475569" }}>
                   {c}
                 </th>
               ))}
@@ -554,17 +571,17 @@ function RaciView() {
           </thead>
           <tbody>
             {RACI.map((row, ri) => (
-              <tr key={ri} className={ri % 2 ? "bg-slate-900/40" : "bg-slate-900/10"}>
-                <td className="sticky left-0 z-10 px-3 py-2 text-[12px] text-slate-300 font-medium" style={{ background: ri % 2 ? "rgba(15,23,42,0.95)" : "rgba(15,23,42,0.85)" }}>{row.act}</td>
+              <tr key={ri} className={ri % 2 ? "bg-slate-50/50" : "bg-white"}>
+                <td className="sticky left-0 z-10 px-3 py-2 text-[12px] text-slate-600 font-medium" style={{ background: ri % 2 ? "#f8fafc" : "#ffffff" }}>{row.act}</td>
                 {row.v.map((val, ci) => (
                   <td key={ci} onMouseEnter={() => setHl(ci)} onMouseLeave={() => setHl(null)}
                     className="px-2 py-2 text-center transition"
-                    style={{ background: hl === ci ? "rgba(51,65,85,0.45)" : undefined }}>
+                    style={{ background: hl === ci ? "#f0f9ff" : undefined }}>
                     <span className="inline-flex items-center justify-center rounded-md text-[11px] font-bold px-1.5 py-0.5"
                       style={{
-                        color: RACI_COLORS[val] ?? "#64748b",
-                        background: `${RACI_COLORS[val] ?? "#64748b"}1f`,
-                        border: `1px solid ${RACI_COLORS[val] ?? "#64748b"}55`,
+                        color: RACI_COLORS[val] ?? "#94a3b8",
+                        background: `${RACI_COLORS[val] ?? "#94a3b8"}1f`,
+                        border: `1px solid ${RACI_COLORS[val] ?? "#94a3b8"}55`,
                         opacity: hl !== null && hl !== ci ? 0.35 : 1,
                       }}>{val}</span>
                   </td>
@@ -574,7 +591,7 @@ function RaciView() {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-[11px] text-slate-500">Solo un <b>A</b> (Accountable) por fila. "A/R" indica que el mismo rol ejecuta y es responsable final.</p>
+      <p className="mt-2 text-[11px] text-slate-400">Solo un <b>A</b> (Accountable) por fila. "A/R" indica que el mismo rol ejecuta y es responsable final.</p>
     </div>
   );
 }
@@ -591,15 +608,15 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen w-full text-slate-200" style={{ background: "radial-gradient(120% 100% at 50% 0%, #0f172a 0%, #020617 70%)" }}>
+    <div className="min-h-screen w-full bg-slate-50 text-slate-700">
       <div className="mx-auto max-w-5xl px-3 sm:px-5 py-5">
         <div className="flex items-center gap-2.5 mb-1">
-          <span className="flex items-center justify-center rounded-xl" style={{ width: 38, height: 38, background: "rgba(56,189,248,0.15)" }}>
-            <Cloud size={20} className="text-sky-400" />
+          <span className="flex items-center justify-center rounded-xl" style={{ width: 38, height: 38, background: "linear-gradient(135deg,#0a6fb8,#1aa3c4)" }}>
+            <Cloud size={20} className="text-white" />
           </span>
           <div>
-            <h1 className="text-base sm:text-lg font-bold text-white leading-tight">Modelo de Roles de Datos e IA</h1>
-            <p className="text-[11px] sm:text-xs text-slate-400">Roles como recursos de nube · niveles · carrera · interacciones · v2.0</p>
+            <h1 className="text-base sm:text-lg font-bold text-slate-800 leading-tight">Modelo de Roles de Datos e IA</h1>
+            <p className="text-[11px] sm:text-xs text-slate-500">Roles como recursos de nube · niveles · carrera · interacciones</p>
           </div>
         </div>
 
@@ -611,9 +628,10 @@ export default function App() {
               <button key={t.k} onClick={() => { setTab(t.k); setRole(null); }}
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs sm:text-sm font-medium whitespace-nowrap transition-all"
                 style={{
-                  background: active ? "rgba(51,65,85,0.9)" : "rgba(30,41,59,0.4)",
-                  color: active ? "#fff" : "#94a3b8",
-                  border: `1px solid ${active ? "rgba(100,116,139,0.6)" : "rgba(51,65,85,0.4)"}`,
+                  background: active ? "linear-gradient(135deg,#0a6fb8,#1aa3c4)" : "#ffffff",
+                  color: active ? "#fff" : "#64748b",
+                  border: `1px solid ${active ? "transparent" : "#e2e8f0"}`,
+                  boxShadow: active ? "0 4px 12px -4px rgba(10,111,184,0.4)" : "none",
                 }}>
                 <TIcon size={15} /> {t.label}
               </button>
@@ -621,13 +639,13 @@ export default function App() {
           })}
         </div>
 
-        <div className="rounded-2xl bg-slate-900/30 ring-1 ring-slate-800/60 p-4 sm:p-5">
+        <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-4 sm:p-5 shadow-sm">
           {tab === "graph" && (role ? <RoleDetail roleKey={role} onBack={() => setRole(null)} /> : <GraphView onSelect={setRole} />)}
           {tab === "agile" && <AgileView />}
           {tab === "raci" && <RaciView />}
         </div>
 
-        <p className="text-center text-[10px] text-slate-600 mt-4">Basado en el informe "Modelo de Roles del Equipo de Datos e IA" · revisión sugerida cada 12 meses.</p>
+        <p className="text-center text-[10px] text-slate-400 mt-4">Basado en el informe "Modelo de Roles del Equipo de Datos e IA" · revisión sugerida cada 12 meses.</p>
       </div>
     </div>
   );
