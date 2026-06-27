@@ -315,3 +315,45 @@ export const RACI = [
 export const RACI_COLS = ["Ing. Datos", "Científico", "Analista BI", "Ing. IA", "Agile Mgr", "Líder T./E."];
 export const RACI_COLORS: Record<string, string> = { "A/R": "#0d9488", "A": "#1aa3c4", "R": "#0a6fb8", "C": "#f59e0b", "I": "#94a3b8" };
 
+
+/* ============================================================================
+   ASIGNACIONES DE PERSONAS  (USER_ASSIGNMENTS)
+   ============================================================================
+   Tabla que conecta a cada persona con su rol, su nivel y el proyecto en el
+   que está. Permite que alguien elija su nombre y la app lo lleve directo a
+   su vista, con el tipo de proyecto ya prefiltrado.
+
+   ----------------------------------------------------------------------------
+   CÓMO AGREGAR O EDITAR UNA PERSONA
+   ----------------------------------------------------------------------------
+   Copia una línea existente y cambia los valores. Cada persona es un objeto:
+
+     { email: "ana.perez@dataknow.io", name: "Ana Pérez",
+       role: "de", level: "Senior", project: "rag" },
+
+   Significado de cada campo:
+   - email ...  Correo corporativo. Hoy es solo un identificador.
+                🔮 EL DÍA QUE IT HABILITE ENTRA ID, este es el dato que el
+                login devolverá automáticamente para reconocer a la persona.
+                Por eso conviene usar el correo real desde ya.
+   - name ....  Nombre que se muestra en pantalla.
+   - role ....  Rol. Debe ser uno de: "de", "ds", "bi", "ia"
+                (de=Ing. Datos, ds=Científico, bi=Analista BI, ia=Ing. IA)
+   - level ...  Nivel. Debe ser uno de los de LEVELS:
+                "Junior", "Semisenior", "Senior", "Líder Técnico", "Líder Especialista"
+   - project .  Proyecto asignado. Debe ser una 'key' de PROJECT_TYPES:
+                "all", "chatbot", "modelo", "rag", "analitica", "agentes"
+                (usa "all" si la persona no está en un proyecto específico)
+
+   ⚠️ Los valores de role, level y project deben coincidir EXACTAMENTE con los
+      definidos arriba, o la persona no se mostrará bien. Respeta mayúsculas.
+
+   NOTA: Estos son datos de ejemplo. Reemplázalos por personas reales.
+   ============================================================================ */
+export const USER_ASSIGNMENTS: { email: string; name: string; role: string; level: string; project: string }[] = [
+  { email: "ana.perez@dataknow.io",    name: "Ana Pérez",      role: "de", level: "Senior",          project: "rag" },
+  { email: "carlos.gomez@dataknow.io", name: "Carlos Gómez",   role: "ds", level: "Semisenior",      project: "modelo" },
+  { email: "lucia.rojas@dataknow.io",  name: "Lucía Rojas",    role: "ia", level: "Junior",          project: "chatbot" },
+  { email: "marta.diaz@dataknow.io",   name: "Marta Díaz",     role: "bi", level: "Líder Técnico",   project: "analitica" },
+  { email: "jose.barrita@dataknow.io", name: "José Barrita",   role: "ia", level: "Senior",          project: "agentes" },
+];
