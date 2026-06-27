@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Cloud, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Cloud, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight, Compass, GitBranch, CheckCircle2 } from "lucide-react";
 import {
   ROLE_ORDER, ROLES, LEVELS, DIMS, VALUE_FLOW, PROJECT_TYPES,
   LATERAL, AGILE, RACI, RACI_COLS, RACI_COLORS
 } from "./data/modelo";
+
+// Clave con la que se recuerda en el navegador que ya se vio la bienvenida.
+const WELCOME_KEY = "rolesdk_welcome_seen";
 
 
 /* ----------------------------- HELPERS ----------------------------- */
@@ -396,9 +399,106 @@ function RaciView() {
 }
 
 /* ----------------------------- ROOT ----------------------------- */
+/* ----------------------------- WELCOME ----------------------------- */
+function Welcome({ onEnter }: { onEnter: (dontShowAgain: boolean) => void }) {
+  const [dontShow, setDontShow] = useState(true);
+
+  const points = [
+    { icon: Compass, color: "#0a6fb8",
+      title: "Tu rol y tus niveles",
+      text: "Las responsabilidades, habilidades y KPIs de cada nivel, desde Junior hasta Líder." },
+    { icon: GitBranch, color: "#1aa3c4",
+      title: "Cómo fluye el trabajo",
+      text: "Cómo se conectan los roles según el tipo de proyecto." },
+    { icon: CheckCircle2, color: "#0d9488",
+      title: "Tu camino de crecimiento",
+      text: "Qué necesitas para llegar al siguiente nivel." },
+  ];
+
+  return (
+    <div className="min-h-screen w-full bg-slate-50 text-slate-700 flex items-center justify-center px-4 py-10">
+      <div className="w-full max-w-2xl">
+        <div className="rounded-3xl bg-white ring-1 ring-slate-200 shadow-lg overflow-hidden">
+          {/* franja superior con degradado corporativo */}
+          <div className="px-6 sm:px-10 pt-9 pb-8 text-center" style={{ background: "linear-gradient(135deg,#0a6fb8,#1aa3c4)" }}>
+            <span className="inline-flex items-center justify-center rounded-2xl bg-white/15 mb-4" style={{ width: 56, height: 56 }}>
+              <Cloud size={30} className="text-white" />
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">Modelo de Roles de Datos e IA</h1>
+            <p className="text-sm sm:text-base text-sky-50/90 mt-2 max-w-md mx-auto">
+              Conoce tu rol, entiende cómo crecer y descubre qué te toca en cada proyecto.
+            </p>
+          </div>
+
+          {/* qué encontrarás */}
+          <div className="px-6 sm:px-10 py-7">
+            <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-3">Qué encontrarás aquí</div>
+            <div className="space-y-3">
+              {points.map((p) => {
+                const PIcon = p.icon;
+                return (
+                  <div key={p.title} className="flex items-start gap-3">
+                    <span className="flex items-center justify-center rounded-xl shrink-0" style={{ width: 40, height: 40, background: `${p.color}15` }}>
+                      <PIcon size={20} style={{ color: p.color }} />
+                    </span>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-800">{p.title}</div>
+                      <div className="text-[13px] text-slate-500 leading-relaxed">{p.text}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* botón y opción */}
+            <button onClick={() => onEnter(dontShow)}
+              className="w-full mt-7 flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold text-white transition-all"
+              style={{ background: "linear-gradient(135deg,#0a6fb8,#1aa3c4)", boxShadow: "0 6px 18px -6px rgba(10,111,184,0.5)" }}>
+              Explorar el modelo <ArrowRight size={17} />
+            </button>
+
+            <label className="flex items-center justify-center gap-2 mt-4 text-[13px] text-slate-500 cursor-pointer select-none">
+              <input type="checkbox" checked={dontShow} onChange={(e) => setDontShow(e.target.checked)}
+                className="rounded border-slate-300" style={{ accentColor: "#0a6fb8" }} />
+              No volver a mostrar esta pantalla
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ----------------------------- ROOT ----------------------------- */
 export default function App() {
   const [tab, setTab] = useState("graph");
   const [role, setRole] = useState<string | null>(null);
+  // showWelcome: null = aún no sabemos (evita parpadeo), true/false = decisión tomada
+  const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
+
+  // Al cargar, revisamos si la persona ya vio la bienvenida en este navegador.
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = localStorage.getItem(WELCOME_KEY) === "true";
+    } catch {
+      // Si el navegador bloquea el almacenamiento, simplemente mostramos la bienvenida.
+      seen = false;
+    }
+    setShowWelcome(!seen);
+  }, []);
+
+  // Cuando la persona entra desde la bienvenida.
+  const handleEnter = (dontShowAgain: boolean) => {
+    if (dontShowAgain) {
+      try { localStorage.setItem(WELCOME_KEY, "true"); } catch { /* sin memoria, no pasa nada */ }
+    }
+    setShowWelcome(false);
+  };
+
+  // Mientras decidimos, no pintamos nada (evita un parpadeo de la bienvenida).
+  if (showWelcome === null) return null;
+  if (showWelcome) return <Welcome onEnter={handleEnter} />;
 
   const tabs = [
     { k: "graph", label: "Roles y flujo", icon: Network },
@@ -444,7 +544,12 @@ export default function App() {
           {tab === "raci" && <RaciView />}
         </div>
 
-        <p className="text-center text-[10px] text-slate-400 mt-4">Basado en el informe "Modelo de Roles del Equipo de Datos e IA" · revisión sugerida cada 12 meses.</p>
+        <div className="text-center mt-4 space-y-1">
+          <p className="text-[10px] text-slate-400">Basado en el informe "Modelo de Roles del Equipo de Datos e IA" · revisión sugerida cada 12 meses.</p>
+          <button onClick={() => setShowWelcome(true)} className="text-[10px] text-slate-400 hover:text-slate-600 underline transition">
+            Ver pantalla de bienvenida
+          </button>
+        </div>
       </div>
     </div>
   );
