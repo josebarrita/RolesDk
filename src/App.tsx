@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Cloud, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight, Compass, GitBranch, CheckCircle2, UserCircle2 } from "lucide-react";
+import { Cloud, ArrowRight, ArrowLeft, Network, Table2, Workflow, ChevronRight, Compass, GitBranch, CheckCircle2 } from "lucide-react";
 import {
   ROLE_ORDER, ROLES, LEVELS, DIMS, VALUE_FLOW, PROJECT_TYPES,
-  LATERAL, AGILE, RACI, RACI_COLS, RACI_COLORS, USER_ASSIGNMENTS
+  LATERAL, AGILE, RACI, RACI_COLS, RACI_COLORS
 } from "./data/modelo";
 
 // Clave con la que se recuerda en el navegador que ya se vio la bienvenida.
@@ -202,32 +202,19 @@ function GraphView({ onSelect }: { onSelect: (key: string) => void }) {
   );
 }
 
-function RoleDetail({ roleKey, onBack, initialLevel, assignment }: { roleKey: string; onBack: () => void; initialLevel?: string; assignment?: { name: string; project: string } }) {
+function RoleDetail({ roleKey, onBack }: { roleKey: string; onBack: () => void }) {
   const r = ROLES[roleKey];
   const Icon = r.icon;
-  const [level, setLevel] = useState(initialLevel && LEVELS.includes(initialLevel) ? initialLevel : "Junior");
+  const [level, setLevel] = useState("Junior");
   const lvlIndex = LEVELS.indexOf(level);
   const data = r.levels[level as keyof typeof r.levels];
   const prog = lvlIndex < 4 ? r.progression[lvlIndex] : null;
-  const projLabel = assignment ? (PROJECT_TYPES.find((p) => p.key === assignment.project)?.label ?? "") : "";
 
   return (
     <div className="w-full">
       <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mb-3 transition">
         <ArrowLeft size={15} /> Volver al grafo
       </button>
-
-      {assignment && (
-        <div className="flex flex-wrap items-center gap-2 mb-3 rounded-xl px-3.5 py-2.5 text-[13px]" style={{ background: "#0a6fb812", border: "1px solid #0a6fb833" }}>
-          <UserCircle2 size={16} style={{ color: "#0a6fb8" }} />
-          <span className="text-slate-700">Estás viendo esto como <b>{assignment.name}</b></span>
-          {assignment.project !== "all" && projLabel && (
-            <span className="ml-auto text-[12px] font-medium px-2 py-0.5 rounded-full" style={{ background: "#0a6fb81f", color: "#0a6fb8" }}>
-              Proyecto: {projLabel}
-            </span>
-          )}
-        </div>
-      )}
 
       <div className="rounded-2xl p-4 sm:p-5 mb-4" style={{ background: r.soft, border: `1px solid ${r.color}33` }}>
         <div className="flex items-start gap-3">
@@ -486,10 +473,6 @@ function Welcome({ onEnter }: { onEnter: (dontShowAgain: boolean) => void }) {
 export default function App() {
   const [tab, setTab] = useState("graph");
   const [role, setRole] = useState<string | null>(null);
-  const [roleLevel, setRoleLevel] = useState<string | undefined>(undefined);
-  // estados del buscador "Encuentra tu rol"
-  const [finderRole, setFinderRole] = useState("");
-  const [finderLevel, setFinderLevel] = useState("");
   // showWelcome: null = aún no sabemos (evita parpadeo), true/false = decisión tomada
   const [showWelcome, setShowWelcome] = useState<boolean | null>(null);
 
@@ -517,30 +500,6 @@ export default function App() {
   if (showWelcome === null) return null;
   if (showWelcome) return <Welcome onEnter={handleEnter} />;
 
-  // Persona actualmente seleccionada (si entró por la tabla de asignaciones).
-  const activeAssignment = USER_ASSIGNMENTS.find((u) => u.email === finderRole && finderRole.includes("@"));
-
-  // Ir a la ficha de un rol concreto, opcionalmente con nivel y como cierta persona.
-  const goToRole = (roleKey: string, level?: string) => {
-    setTab("graph");
-    setRoleLevel(level);
-    setRole(roleKey);
-  };
-
-  // Cuando se elige una PERSONA de la lista de asignaciones.
-  const handlePickPerson = (email: string) => {
-    setFinderRole(email);
-    setFinderLevel("");
-    const u = USER_ASSIGNMENTS.find((x) => x.email === email);
-    if (u) goToRole(u.role, u.level);
-  };
-
-  // Cuando se usa la selección manual de rol (+ nivel opcional).
-  const handlePickManual = () => {
-    if (!finderRole || finderRole.includes("@")) return;
-    goToRole(finderRole, finderLevel || undefined);
-  };
-
   const tabs = [
     { k: "graph", label: "Roles y flujo", icon: Network },
     { k: "agile", label: "Agile Manager", icon: Workflow },
@@ -557,64 +516,6 @@ export default function App() {
           <div>
             <h1 className="text-base sm:text-lg font-bold text-slate-800 leading-tight">Modelo de Roles de Datos e IA</h1>
             <p className="text-[11px] sm:text-xs text-slate-500">Roles como recursos de nube · niveles · carrera · interacciones</p>
-          </div>
-        </div>
-
-        {/* Encuentra tu rol */}
-        <div className="mt-4 rounded-2xl bg-white ring-1 ring-slate-200 shadow-sm p-3.5 sm:p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <UserCircle2 size={17} style={{ color: "#0a6fb8" }} />
-            <span className="text-sm font-semibold text-slate-800">Encuentra tu rol</span>
-            <span className="text-[12px] text-slate-400">— ve directo a lo tuyo</span>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            {/* Opción A: elegir por persona */}
-            <div className="rounded-xl bg-slate-50 ring-1 ring-slate-200 p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">Soy...</div>
-              <select
-                value={finderRole.includes("@") ? finderRole : ""}
-                onChange={(e) => handlePickPerson(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-[#0a6fb8]">
-                <option value="">Selecciona tu nombre</option>
-                {USER_ASSIGNMENTS.map((u) => (
-                  <option key={u.email} value={u.email}>{u.name}</option>
-                ))}
-              </select>
-              <p className="text-[11px] text-slate-400 mt-1.5">Te lleva a tu rol con tu proyecto asignado.</p>
-            </div>
-
-            {/* Opción B: selección manual */}
-            <div className="rounded-xl bg-slate-50 ring-1 ring-slate-200 p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1.5">O explora un rol</div>
-              <div className="flex gap-2">
-                <select
-                  value={finderRole.includes("@") ? "" : finderRole}
-                  onChange={(e) => { setFinderRole(e.target.value); }}
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-700 outline-none focus:border-[#0a6fb8]">
-                  <option value="">Rol</option>
-                  {ROLE_ORDER.map((k) => (
-                    <option key={k} value={k}>{ROLES[k].name}</option>
-                  ))}
-                </select>
-                <select
-                  value={finderLevel}
-                  onChange={(e) => setFinderLevel(e.target.value)}
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm text-slate-700 outline-none focus:border-[#0a6fb8]">
-                  <option value="">Nivel</option>
-                  {LEVELS.map((lv) => (
-                    <option key={lv} value={lv}>{lv}</option>
-                  ))}
-                </select>
-                <button onClick={handlePickManual}
-                  disabled={!finderRole || finderRole.includes("@")}
-                  className="rounded-lg px-3 text-sm font-semibold text-white transition-all disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg,#0a6fb8,#1aa3c4)" }}>
-                  <ArrowRight size={16} />
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-400 mt-1.5">El nivel es opcional; si no eliges, abre en Junior.</p>
-            </div>
           </div>
         </div>
 
@@ -638,7 +539,7 @@ export default function App() {
         </div>
 
         <div className="rounded-2xl bg-white ring-1 ring-slate-200 p-4 sm:p-5 shadow-sm">
-          {tab === "graph" && (role ? <RoleDetail key={`${role}-${roleLevel ?? "Junior"}`} roleKey={role} initialLevel={roleLevel} assignment={activeAssignment ? { name: activeAssignment.name, project: activeAssignment.project } : undefined} onBack={() => { setRole(null); setRoleLevel(undefined); }} /> : <GraphView onSelect={setRole} />)}
+          {tab === "graph" && (role ? <RoleDetail roleKey={role} onBack={() => setRole(null)} /> : <GraphView onSelect={setRole} />)}
           {tab === "agile" && <AgileView />}
           {tab === "raci" && <RaciView />}
         </div>
